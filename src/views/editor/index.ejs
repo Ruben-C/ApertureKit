@@ -1,0 +1,65 @@
+<%- include('../partials/head') %>
+<div class="page-head">
+  <div>
+    <h1>Categories and forms</h1>
+    <p class="lede">Categories group forms on the home page. Only published forms are visible to members.</p>
+  </div>
+</div>
+
+<% if (!categories.length) { %>
+  <div class="empty"><h2>Start with a category</h2><p>Something like “IT”, “Facilities”, or “Events”. Forms live inside categories.</p></div>
+<% } %>
+
+<% categories.forEach((cat, i) => { const forms = byCategory[cat.id] || []; %>
+  <section class="edit-cat" style="--cat:<%= cat.color %>">
+    <details class="cat-details">
+      <summary>
+        <span class="cat-name"><%= cat.name %></span>
+        <span class="muted"><%= forms.length %> form<%= forms.length === 1 ? '' : 's' %><% if (cat.published_count < forms.length) { %>, <%= forms.length - cat.published_count %> draft<% } %></span>
+        <span class="summary-hint">Edit category</span>
+      </summary>
+      <form method="post" action="/editor/categories/<%= cat.id %>" class="cat-form card">
+        <input type="hidden" name="_csrf" value="<%= csrf %>">
+        <label class="field"><span>Name</span><input name="name" value="<%= cat.name %>" required maxlength="100"></label>
+        <label class="field"><span>Description</span><input name="description" value="<%= cat.description %>" maxlength="500"></label>
+        <label class="field"><span>Color</span><input type="color" name="color" value="<%= cat.color %>"></label>
+        <div class="actions">
+          <button class="btn" type="submit">Save</button>
+          <button class="linklike" type="submit" name="action" value="up" <%= i === 0 ? 'disabled' : '' %>>Move up</button>
+          <button class="linklike" type="submit" name="action" value="down" <%= i === categories.length - 1 ? 'disabled' : '' %>>Move down</button>
+          <button class="linklike danger" type="submit" name="action" value="delete" onclick="return confirm('Delete this category and every form and request in it?')">Delete</button>
+        </div>
+      </form>
+    </details>
+
+    <ul class="list card">
+      <% forms.forEach((f, j) => { %>
+        <li class="edit-form-row">
+          <a class="edit-form-title" href="/editor/forms/<%= f.id %>"><%= f.title %></a>
+          <span class="tag <%= f.published ? 'tag-live' : '' %>"><%= f.published ? 'Published' : 'Draft' %></span>
+          <span class="muted">updated <%= fmtDate(f.updated_at) %></span>
+          <form method="post" action="/editor/forms/<%= f.id %>" class="row-actions">
+            <input type="hidden" name="_csrf" value="<%= csrf %>">
+            <a href="/f/<%= f.slug %>">Preview</a>
+            <button class="linklike" type="submit" name="action" value="<%= f.published ? 'unpublish' : 'publish' %>"><%= f.published ? 'Unpublish' : 'Publish' %></button>
+            <button class="icon-btn" type="submit" name="action" value="up" <%= j === 0 ? 'disabled' : '' %> aria-label="Move up" title="Move up">↑</button>
+            <button class="icon-btn" type="submit" name="action" value="down" <%= j === forms.length - 1 ? 'disabled' : '' %> aria-label="Move down" title="Move down">↓</button>
+          </form>
+        </li>
+      <% }) %>
+      <li><a class="add-link" href="/editor/forms/new?category=<%= cat.id %>">+ New form in <%= cat.name %></a></li>
+    </ul>
+  </section>
+<% }) %>
+
+<section class="new-cat">
+  <h2>New category</h2>
+  <form method="post" action="/editor/categories" class="cat-form card">
+    <input type="hidden" name="_csrf" value="<%= csrf %>">
+    <label class="field"><span>Name</span><input name="name" required maxlength="100" placeholder="e.g. Facilities"></label>
+    <label class="field"><span>Description</span><input name="description" maxlength="500" placeholder="What kind of requests go here"></label>
+    <label class="field"><span>Color</span><input type="color" name="color" value="#2A4BC7"></label>
+    <div class="actions"><button class="btn btn-primary" type="submit">Add category</button></div>
+  </form>
+</section>
+<%- include('../partials/foot') %>

@@ -1,0 +1,76 @@
+<%- include('partials/head') %>
+<nav class="crumbs" aria-label="Breadcrumb"><a href="/">Forms</a> / <a href="/c/<%= form.category_slug %>"><%= form.category_name %></a> / <span><%= form.title %></span></nav>
+<article class="paper card" style="--cat:<%= form.category_color %>">
+  <header class="paper-head">
+    <h1><%= form.title %></h1>
+    <% if (form.description) { %><p class="lede"><%= form.description %></p><% } %>
+    <% if (!form.published) { %><p class="notice">This form is a draft. Only editors can see it.</p><% } %>
+  </header>
+
+  <% if (!user) { %>
+    <p class="notice">You need to <a href="/login">sign in</a> to submit this form<% if (settings.allow_registration === '1') { %>, or <a href="/register">create an account</a><% } %>.</p>
+  <% } %>
+
+  <% const hasErrors = Object.keys(errors).length > 0; %>
+  <% if (hasErrors) { %><p class="field-error" role="alert">Fix the highlighted fields and send again.</p><% } %>
+
+  <% const conditional = form.fields.some((f) => f.showIf); %>
+  <form method="post" action="/f/<%= form.slug %>" enctype="multipart/form-data" class="stack" <%= user ? '' : 'inert' %> <% if (conditional) { %>data-conditions="form-rules"<% } %>>
+    <input type="hidden" name="_csrf" value="<%= csrf %>">
+    <% for (const f of form.fields) {
+         const v = values[f.id];
+         const err = errors[f.id];
+         const req = f.required ? 'required' : '';
+    %>
+      <% if (f.type === 'heading') { %>
+        <div class="form-section" data-field="<%= f.id %>">
+          <h2><%= f.label %></h2>
+          <% if (f.help) { %><p class="muted"><%= f.help %></p><% } %>
+        </div>
+        <% continue; } %>
+
+      <div class="field <%= err ? 'has-error' : '' %>" data-field="<%= f.id %>">
+        <% if (f.type === 'radio' || f.type === 'checkbox' || f.type === 'yesno') { %>
+          <fieldset>
+            <legend><svg class="ficon q-icon" aria-hidden="true" focusable="false"><use href="#ficon-<%= f.type %>"/></svg><%= f.label %><% if (f.required) { %> <abbr title="required">*</abbr><% } %></legend>
+            <% if (f.help) { %><small><%= f.help %></small><% } %>
+            <% if (f.type === 'yesno') { %>
+              <label class="choice"><input type="radio" name="<%= f.id %>" value="yes" <%= v === 'yes' ? 'checked' : '' %> <%= req %>> Yes</label>
+              <label class="choice"><input type="radio" name="<%= f.id %>" value="no" <%= v === 'no' ? 'checked' : '' %> <%= req %>> No</label>
+            <% } else { const picked = Array.isArray(v) ? v : v ? [v] : []; for (const o of f.options) { %>
+              <label class="choice"><input type="<%= f.type %>" name="<%= f.id %>" value="<%= o %>" <%= picked.includes(o) ? 'checked' : '' %> <%= f.type === 'radio' ? req : '' %>> <%= o %></label>
+            <% } } %>
+          </fieldset>
+        <% } else { %>
+          <label for="fld-<%= f.id %>"><span><svg class="ficon q-icon" aria-hidden="true" focusable="false"><use href="#ficon-<%= f.type %>"/></svg><%= f.label %><% if (f.required) { %> <abbr title="required">*</abbr><% } %></span></label>
+          <% const help = f.type === 'file' ? [f.help, `Up to ${uploadLimitMb} MB.`].filter(Boolean).join(' ') : f.help; %>
+          <% if (help) { %><small id="help-<%= f.id %>"><%= help %></small><% } %>
+          <% const aria = help ? `aria-describedby="help-${f.id}"` : ''; %>
+          <% if (f.type === 'textarea') { %>
+            <textarea id="fld-<%= f.id %>" name="<%= f.id %>" rows="5" placeholder="<%= f.placeholder || '' %>" <%= req %> <%- aria %>><%= v || '' %></textarea>
+          <% } else if (f.type === 'select') { %>
+            <select id="fld-<%= f.id %>" name="<%= f.id %>" <%= req %> <%- aria %>>
+              <option value="">Choose…</option>
+              <% for (const o of f.options) { %><option <%= v === o ? 'selected' : '' %>><%= o %></option><% } %>
+            </select>
+          <% } else if (f.type === 'file') { %>
+            <input id="fld-<%= f.id %>" type="file" name="<%= f.id %>" <%= req %> <%- aria %>>
+          <% } else { %>
+            <input id="fld-<%= f.id %>" type="<%= f.type === 'text' ? 'text' : f.type %>" name="<%= f.id %>" value="<%= v || '' %>" placeholder="<%= f.placeholder || '' %>" <%= req %> <%- aria %> <%= f.type === 'number' ? 'step="any"' : '' %>>
+          <% } %>
+        <% } %>
+        <% if (err) { %><p class="field-error"><%= err %></p><% } %>
+      </div>
+    <% } %>
+    <div class="actions">
+      <button class="btn btn-primary" type="submit" <%= user ? '' : 'disabled' %>>Send request</button>
+      <% if (can('editor')) { %><a href="/editor/forms/<%= form.id %>">Edit this form</a><% } %>
+    </div>
+  </form>
+</article>
+<% if (conditional) { %>
+  <script type="application/json" id="form-rules"><%- JSON.stringify(form.fields.map(({ id, type, showIf }) => ({ id, type, showIf }))).replaceAll('<', '\\u003c') %></script>
+  <script type="module" src="/static/form-conditions.js?v=<%= assetVersion %>"></script>
+<% } %>
+<%- include('partials/field_sprite') %>
+<%- include('partials/foot') %>

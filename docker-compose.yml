@@ -1,0 +1,34 @@
+# Self-hosted deployment, built from this checkout:
+#
+#   docker compose up -d --build
+#
+# Upgrade:  git pull && docker compose up -d --build
+# Logs:     docker compose logs -f
+# Backup:   docker run --rm -v portalcake_data:/data -v "$PWD":/backup alpine \
+#             tar czf /backup/portalcake-backup.tgz -C /data .
+#
+# Optional settings go in a `.env` file next to this one (see .env.example).
+
+services:
+  portalcake:
+    build: .
+    image: portalcake
+    container_name: portalcake
+    restart: unless-stopped
+    init: true
+    ports:
+      - "${PORT:-3000}:3000"
+    environment:
+      # Set to 1 when a reverse proxy (Caddy, nginx, Traefik) terminates TLS
+      # in front of this container; also marks session cookies Secure.
+      TRUST_PROXY: ${TRUST_PROXY:-0}
+      MAX_UPLOAD_MB: ${MAX_UPLOAD_MB:-10}
+      # Optional. If unset, a secret is generated once and kept in the volume.
+      SESSION_SECRET: ${SESSION_SECRET:-}
+    volumes:
+      # Database, uploads, and session secret. To use a host directory
+      # instead, replace with `./data:/data` and `chown -R 1000:1000 ./data`.
+      - data:/data
+
+volumes:
+  data:

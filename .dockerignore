@@ -1,0 +1,10 @@
+.git
+node_modules
+data
+.env
+.playwright-mcp
+.DS_Store
+test
+Dockerfile
+docker-compose.yml
+*.md

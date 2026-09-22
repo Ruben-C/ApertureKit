@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title><%= title ? `${title} – ${settings.site_name}` : settings.site_name %></title>
+<link rel="icon" href="/static/favicon.svg?v=<%= assetVersion %>" type="image/svg+xml">
+<link rel="stylesheet" href="/static/app.css?v=<%= assetVersion %>">
+<style>:root{--banner:<%= settings.banner_color %>;--banner-ink:<%= settings.banner_text_color %>;}</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="topbar">
+  <div class="wrap topbar-inner">
+    <a class="brand" href="/"><span class="brand-mark" aria-hidden="true"></span><%= settings.site_name %></a>
+    <nav class="nav" aria-label="Main">
+      <% if (user || settings.require_login !== '1') { %><a href="/" <%- path === '/' ? 'aria-current="page"' : '' %>>Forms</a><% } %>
+      <% if (user) { %>
+        <a href="/requests<%= can('editor') ? '?mine=1' : '' %>" <%- path.startsWith('/requests') && (!can('editor') || query.mine === '1') ? 'aria-current="page"' : '' %>>My requests</a>
+        <% if (can('editor')) { %>
+          <a href="/requests" <%- path.startsWith('/requests') && query.mine !== '1' ? 'aria-current="page"' : '' %>>Queue</a>
+          <a href="/editor" <%- path.startsWith('/editor') ? 'aria-current="page"' : '' %>>Build</a>
+        <% } %>
+        <% if (can('admin')) { %>
+          <a href="/admin/settings" <%- path.startsWith('/admin') ? 'aria-current="page"' : '' %>>Settings</a>
+        <% } %>
+      <% } else { %>
+        <a href="/login" <%- path === '/login' ? 'aria-current="page"' : '' %>>Sign in</a>
+        <% if (settings.allow_registration === '1' && signIn.password) { %><a href="/register">Create account</a><% } %>
+      <% } %>
+    </nav>
+    <% if (user) { %>
+      <form method="post" action="/logout" class="user">
+        <input type="hidden" name="_csrf" value="<%= csrf %>">
+        <span class="who" title="<%= user.email %>"><%= user.name %></span>
+        <button class="linklike" type="submit">Sign out</button>
+      </form>
+    <% } %>
+  </div>
+</header>
+<% if (flash) { %>
+  <div class="wrap"><p class="flash flash-<%= flash.kind %>" role="status"><%= flash.message %></p></div>
+<% } %>
+<main id="main" class="wrap main">

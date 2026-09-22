@@ -1,0 +1,5 @@
+<nav class="tabs" aria-label="Administration">
+  <a href="/admin/settings" <%- path === '/admin/settings' ? 'aria-current="page"' : '' %>>Settings</a>
+  <a href="/admin/users" <%- path.startsWith('/admin/users') ? 'aria-current="page"' : '' %>>People</a>
+  <a href="/admin/auth" <%- path.startsWith('/admin/auth') ? 'aria-current="page"' : '' %>>Sign-in methods</a>
+</nav>

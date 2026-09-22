@@ -1,0 +1,45 @@
+<%- include('partials/head') %>
+<div class="page-head">
+  <h1><%= title %></h1>
+  <% if (isEditor) { %>
+    <div class="page-actions"><% if (mine) { %><a href="/requests">See everyone's requests</a><% } else { %><a href="/requests?mine=1">Only mine</a><% } %></div>
+  <% } %>
+</div>
+
+<% const base = mine && isEditor ? '/requests?mine=1' : '/requests'; const join = base.includes('?') ? '&' : '?'; %>
+<nav class="tabs" aria-label="Filter by status">
+  <a href="<%= base %>" <%= !status ? 'aria-current="true"' : '' %>>All <span class="count"><%= Object.values(counts).reduce((a, b) => a + b, 0) %></span></a>
+  <% for (const [key, label] of Object.entries(STATUS)) { %>
+    <a href="<%= base + join %>status=<%= key %>" <%= status === key ? 'aria-current="true"' : '' %>><%= label %> <span class="count"><%= counts[key] || 0 %></span></a>
+  <% } %>
+</nav>
+
+<% if (!requests.length) { %>
+  <div class="empty">
+    <h2><%= status ? `Nothing ${STATUS[status].toLowerCase()}` : 'No requests yet' %></h2>
+    <% if (mine) { %><p><a href="/">Browse the forms</a> to send your first request.</p><% } else { %><p>Requests from members will show up here.</p><% } %>
+  </div>
+<% } else { %>
+  <ol class="list card">
+    <% for (const r of requests) {
+         // One glyph per kind of question on the form, in form order.
+         const types = [...new Set(r.snapshot.fields.filter((f) => FIELD_TYPES[f.type] && !FIELD_TYPES[f.type].display).map((f) => f.type))];
+         const typeNames = types.map((t) => FIELD_TYPES[t].label).join(', ');
+    %>
+      <li>
+        <a class="list-row ticket-row" href="/requests/<%= r.id %>">
+          <span class="ticket-no"><%= ticket(r.id) %></span>
+          <span class="ticket-main">
+            <span class="ticket-title"><%= r.snapshot.title %></span>
+            <span class="ticket-meta"><%= r.snapshot.category %><% if (!mine) { %> · <%= r.requester %><% } %> · <%= fmtDate(r.created_at) %><% if (types.length) { %>
+              <span class="ticket-types" title="<%= typeNames %>"><span class="visually-hidden">Questions: <%= typeNames %>.</span><% for (const t of types) { %><svg class="ficon" aria-hidden="true" focusable="false"><use href="#ficon-<%= t %>"/></svg><% } %></span>
+            <% } %></span>
+          </span>
+          <span class="status status-<%= r.status %>"><%= STATUS[r.status] %></span>
+        </a>
+      </li>
+    <% } %>
+  </ol>
+  <%- include('partials/field_sprite') %>
+<% } %>
+<%- include('partials/foot') %>

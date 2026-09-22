@@ -1,0 +1,73 @@
+<%- include('partials/head') %>
+<%# Questions hidden by a show-when rule have no answer at all, so they are not listed. %>
+<% const fields = request.snapshot.fields.filter((f) => !FIELD_TYPES[f.type].display && f.id in request.answers); %>
+<nav class="crumbs" aria-label="Breadcrumb"><a href="/requests<%= can('editor') && request.user_id === user.id ? '?mine=1' : '' %>">Requests</a> / <span><%= ticket(request.id) %></span></nav>
+
+<% if (justSubmitted) { %>
+  <div class="received">
+    <div class="stamp" aria-hidden="true">Received</div>
+    <div>
+      <p class="received-title">Request <%= ticket(request.id) %> sent</p>
+      <p><%= request.snapshot.confirmation || (canComment ? 'Someone will pick this up. You can follow progress and add notes on this page.' : 'Someone will pick this up. You can follow progress on this page.') %></p>
+    </div>
+  </div>
+<% } %>
+
+<article class="ticket card">
+  <header class="ticket-head">
+    <div>
+      <p class="ticket-no big"><%= ticket(request.id) %></p>
+      <h1><%= request.snapshot.title %></h1>
+      <p class="muted"><%= request.snapshot.category %> · from <%= request.requester %><% if (can('editor')) { %> (<%= request.requester_email %>)<% } %> · <%= fmtDate(request.created_at) %></p>
+    </div>
+    <span class="status status-<%= request.status %>"><%= STATUS[request.status] %></span>
+  </header>
+
+  <% if (can('editor')) { %>
+    <form method="post" action="/requests/<%= request.id %>/status" class="status-form">
+      <input type="hidden" name="_csrf" value="<%= csrf %>">
+      <label for="status">Set status</label>
+      <select id="status" name="status">
+        <% for (const [key, label] of Object.entries(STATUS)) { %><option value="<%= key %>" <%= request.status === key ? 'selected' : '' %>><%= label %></option><% } %>
+      </select>
+      <button class="btn" type="submit">Update</button>
+    </form>
+  <% } %>
+
+  <dl class="answers">
+    <% for (const f of fields) { const a = request.answers[f.id]; const files = attachments[f.id] || []; %>
+      <div>
+        <dt><svg class="ficon q-icon" aria-hidden="true" focusable="false"><use href="#ficon-<%= f.type %>"/></svg><%= f.label %></dt>
+        <% if (f.type === 'file') { %>
+          <dd><% if (files.length) { for (const file of files) { %><a href="/requests/<%= request.id %>/files/<%= file.id %>"><%= file.original_name %></a> <span class="muted">(<%= Math.max(1, Math.round(file.size / 1024)) %> KB)</span><% } } else { %><span class="muted">No file</span><% } %></dd>
+        <% } else { %>
+          <dd><%= Array.isArray(a) ? (a.length ? a.join(', ') : '—') : (a || '—') %></dd>
+        <% } %>
+      </div>
+    <% } %>
+  </dl>
+</article>
+
+<% if (settings.comments !== 'off' || comments.length) { %>
+<section id="comments" class="comments">
+  <h2>Notes</h2>
+  <% if (!comments.length) { %><p class="muted">Nothing yet. Use notes to ask a question or add information.</p><% } %>
+  <% for (const c of comments) { %>
+    <article class="comment <%= c.author_role !== 'member' ? 'comment-staff' : '' %>">
+      <p class="comment-meta"><strong><%= c.author %></strong><% if (c.author_role !== 'member') { %> <span class="tag"><%= c.author_role %></span><% } %> · <%= fmtDate(c.created_at) %></p>
+      <p><%= c.body %></p>
+    </article>
+  <% } %>
+  <% if (canComment) { %>
+    <form method="post" action="/requests/<%= request.id %>/comments" class="stack">
+      <input type="hidden" name="_csrf" value="<%= csrf %>">
+      <label class="field"><span>Add a note</span><textarea name="body" rows="3" required maxlength="5000"></textarea></label>
+      <div class="actions"><button class="btn" type="submit">Add note</button></div>
+    </form>
+  <% } else if (settings.comments === 'staff') { %>
+    <p class="muted">Only editors can add notes here.</p>
+  <% } %>
+</section>
+<% } %>
+<%- include('partials/field_sprite') %>
+<%- include('partials/foot') %>

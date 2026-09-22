@@ -1,0 +1,19 @@
+<%- include('partials/head') %>
+<section class="narrow">
+  <h1>Create an account</h1>
+  <p class="lede">You need an account to submit requests and follow their progress.</p>
+  <% if (locals.error) { %><p class="field-error" role="alert"><%= error %></p><% } %>
+  <form method="post" action="/register" class="stack">
+    <input type="hidden" name="_csrf" value="<%= csrf %>">
+    <label class="field"><span>Your name</span><input name="name" value="<%= values.name || '' %>" required autocomplete="name" autofocus></label>
+    <label class="field"><span>Email</span><input type="email" name="email" value="<%= values.email || '' %>" required autocomplete="email">
+      <% if (domains.length) { %><small>Use an address ending in <%= domains.map((d) => '@' + d).join(' or ') %>.</small><% } %>
+    </label>
+    <label class="field"><span>Password</span><input type="password" name="password" required minlength="8" autocomplete="new-password"><small>At least 8 characters.</small></label>
+    <div class="actions">
+      <button class="btn btn-primary" type="submit">Create account</button>
+      <a href="/login">I already have one</a>
+    </div>
+  </form>
+</section>
+<%- include('partials/foot') %>

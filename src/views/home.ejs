@@ -1,0 +1,43 @@
+<%- include('partials/head') %>
+<section class="banner <%= settings.banner_image ? 'banner-image' : '' %>" <% if (settings.banner_image) { %>style="background-image:url('/branding/<%= settings.banner_image %>')"<% } %>>
+  <div class="banner-inner">
+    <h1 class="banner-title"><%= settings.site_name %></h1>
+    <% if (settings.tagline) { %><p class="banner-tagline"><%= settings.tagline %></p><% } %>
+  </div>
+</section>
+
+<% if (settings.welcome_text) { %><p class="lede"><%= settings.welcome_text %></p><% } %>
+
+<% if (!categories.length) { %>
+  <div class="empty">
+    <h2>No forms yet</h2>
+    <% if (can('editor')) { %>
+      <p>Create a category, then add a form to it and publish it.</p>
+      <p><a class="btn btn-primary" href="/editor">Start building</a></p>
+    <% } else { %>
+      <p>An editor has not published any request forms yet. Check back soon.</p>
+    <% } %>
+  </div>
+<% } else { %>
+  <div class="directory">
+    <% for (const cat of categories) { %>
+      <section class="dir-section" style="--cat:<%= cat.color %>">
+        <div class="dir-head">
+          <h2><a href="/c/<%= cat.slug %>"><%= cat.name %></a></h2>
+          <% if (cat.description) { %><p><%= cat.description %></p><% } %>
+        </div>
+        <ul class="list card">
+          <% for (const f of cat.forms) { %>
+            <li>
+              <a class="list-row dir-row" href="/f/<%= f.slug %>">
+                <span class="dir-title"><%= f.title %></span>
+                <% if (f.description) { %><span class="dir-desc"><%= f.description %></span><% } %>
+              </a>
+            </li>
+          <% } %>
+        </ul>
+      </section>
+    <% } %>
+  </div>
+<% } %>
+<%- include('partials/foot') %>

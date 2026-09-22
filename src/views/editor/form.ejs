@@ -1,0 +1,60 @@
+<%- include('../partials/head') %>
+<nav class="crumbs" aria-label="Breadcrumb"><a href="/editor">Categories and forms</a> / <span><%= form.id ? form.title : 'New form' %></span></nav>
+<div class="page-head">
+  <h1><%= form.id ? 'Edit form' : 'New form' %></h1>
+  <% if (form.id) { %><div class="page-actions"><a href="/f/<%= form.slug %>">Preview as a member</a></div><% } %>
+</div>
+<% if (locals.error) { %><p class="field-error" role="alert"><%= error %></p><% } %>
+
+<form method="post" action="<%= form.id ? `/editor/forms/${form.id}` : '/editor/forms' %>" class="builder" id="builder-form">
+  <input type="hidden" name="_csrf" value="<%= csrf %>">
+
+  <div class="builder-side card">
+    <label class="field"><span>Title</span><input name="title" value="<%= form.title %>" required maxlength="150"></label>
+    <label class="field"><span>Category</span>
+      <select name="category_id"><% for (const c of categories) { %><option value="<%= c.id %>" <%= c.id === form.category_id ? 'selected' : '' %>><%= c.name %></option><% } %></select>
+    </label>
+    <label class="field"><span>Description</span><textarea name="description" rows="3" maxlength="2000"><%= form.description %></textarea><small>Shown above the form and in the directory.</small></label>
+    <label class="field"><span>Confirmation message</span><textarea name="confirmation" rows="3" maxlength="2000"><%= form.confirmation %></textarea><small>Shown after someone sends the request.</small></label>
+    <label class="choice-field"><input type="checkbox" name="published" value="1" <%= form.published ? 'checked' : '' %>><span>Published</span><small>Visible to members. Drafts can still be previewed by editors.</small></label>
+    <div class="actions">
+      <button class="btn btn-primary" type="submit"><%= form.id ? 'Save form' : 'Create form' %></button>
+      <% if (form.id) { %><button class="linklike danger" type="submit" name="action" value="delete" formnovalidate onclick="return confirm('Delete this form and all of its requests?')">Delete form</button><% } %>
+    </div>
+  </div>
+
+  <form-builder class="builder-main" for="fields-json" types="field-types">
+    <div class="builder-head">
+      <h2>Questions</h2>
+    </div>
+    <div class="field-list" data-list></div>
+    <p class="empty" data-empty hidden>No questions yet. Pick a type below to add the first one.</p>
+    <div class="add-palette" role="group" aria-labelledby="add-palette-title">
+      <p class="add-palette-title" id="add-palette-title">Add a question</p>
+      <div class="type-tiles">
+        <% for (const [key, t] of Object.entries(FIELD_TYPES)) { %>
+        <button type="button" class="type-tile" data-add="<%= key %>">
+          <span class="type-tile-glyph"><svg class="ficon" aria-hidden="true" focusable="false"><use href="#ficon-<%= key %>"/></svg></span>
+          <span class="type-tile-label"><%= t.label %></span>
+        </button>
+        <% } %>
+      </div>
+    </div>
+    <details class="json-fallback" open>
+      <summary>Questions as JSON</summary>
+      <label class="field">
+        <span class="visually-hidden">Questions as JSON</span>
+        <textarea name="fields" id="fields-json" rows="12"><%= JSON.stringify(form.fields, null, 2) %></textarea>
+        <small>Kept in step with the builder above. You can also paste JSON here.</small>
+      </label>
+    </details>
+  </form-builder>
+</form>
+
+<%- include('../partials/field_sprite') %>
+<script type="application/json" id="field-types"><%- JSON.stringify(FIELD_TYPES).replaceAll('<', '\\u003c') %></script>
+<script type="module" src="/static/components/option-list.js?v=<%= assetVersion %>"></script>
+<script type="module" src="/static/components/question-preview.js?v=<%= assetVersion %>"></script>
+<script type="module" src="/static/components/field-card.js?v=<%= assetVersion %>"></script>
+<script type="module" src="/static/components/form-builder.js?v=<%= assetVersion %>"></script>
+<%- include('../partials/foot') %>

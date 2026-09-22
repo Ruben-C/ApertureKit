@@ -1,0 +1,6 @@
+<%# Field-type glyphs as an SVG sprite: use with <svg class="ficon"><use href="#ficon-KEY"/></svg>. %>
+<svg hidden xmlns="http://www.w3.org/2000/svg">
+  <% for (const key of Object.keys(FIELD_TYPES)) { %>
+  <symbol id="ficon-<%= key %>" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><%- include('field_icon', { type: key }) %></symbol>
+  <% } %>
+</svg>

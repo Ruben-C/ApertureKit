@@ -1,0 +1,23 @@
+<%- include('partials/head') %>
+<nav class="crumbs" aria-label="Breadcrumb"><a href="/">Forms</a> / <span><%= category.name %></span></nav>
+<section class="dir-section" style="--cat:<%= category.color %>">
+  <div class="dir-head">
+    <h1><%= category.name %></h1>
+    <% if (category.description) { %><p><%= category.description %></p><% } %>
+  </div>
+  <% if (!forms.length) { %>
+    <p class="muted">No published forms in this category yet.</p>
+  <% } else { %>
+    <ul class="list card">
+      <% for (const f of forms) { %>
+        <li>
+          <a class="list-row dir-row" href="/f/<%= f.slug %>">
+            <span class="dir-title"><%= f.title %></span>
+            <% if (f.description) { %><span class="dir-desc"><%= f.description %></span><% } %>
+          </a>
+        </li>
+      <% } %>
+    </ul>
+  <% } %>
+</section>
+<%- include('partials/foot') %>
