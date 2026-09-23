@@ -1,14 +1,20 @@
-<%- include('../partials/head') %>
-<div class="page-head">
-  <h1>Sign-in methods</h1>
-</div>
+<%- include('../partials/head', { wide: true }) %>
+<% const typeIcon = { oidc: 'globe', saml: 'shield', ldap: 'users' }; %>
+<div class="with-subnav">
 <%- include('../partials/admin_nav') %>
+<div>
+<div class="page-head">
+  <div>
+    <h1>Sign-in methods</h1>
+    <p class="lede">Portal passwords work out of the box. Add single sign-on or a directory so people use the account they already have.</p>
+  </div>
+</div>
 
 <div class="settings">
   <section class="settings-group card">
-    <header>
-      <h2>Connected methods</h2>
-      <% if (!providers.length) { %><p>Only portal passwords so far. Add single sign-on or a directory below.</p><% } %>
+    <header class="card-head">
+      <h2><%- include('../partials/icon', { name: 'key' }) %>Connected methods</h2>
+      <p><% if (!providers.length) { %>Only portal passwords so far.<% } else { %><%= providers.length %> configured. Switched-off methods keep their settings but are not offered on the sign-in page.<% } %></p>
     </header>
     <% if (providers.length) { %>
       <div class="table-wrap">
@@ -17,48 +23,58 @@
           <tbody>
             <% for (const p of providers) { %>
               <tr>
-                <td><a href="/admin/auth/<%= p.id %>"><%= p.name %></a></td>
+                <td><span class="person"><span class="tile tile-sm"><%- include('../partials/icon', { name: typeIcon[p.type] || 'key' }) %></span><a href="/admin/auth/<%= p.id %>" style="font-weight:600;color:inherit;text-decoration:none"><%= p.name %></a></span></td>
                 <td><%= types[p.type].label %></td>
-                <td><% if (p.enabled) { %><span class="tag tag-live">On</span><% } else { %><span class="tag">Off</span><% } %></td>
-                <td class="end"><a href="/admin/auth/<%= p.id %>">Edit</a></td>
+                <td><% if (p.enabled) { %><span class="tag tag-live"><span class="dot"></span>On</span><% } else { %><span class="tag"><span class="dot"></span>Off</span><% } %></td>
+                <td class="end"><a class="btn btn-sm btn-ghost" href="/admin/auth/<%= p.id %>"><%- include('../partials/icon', { name: 'edit' }) %>Edit</a></td>
               </tr>
             <% } %>
           </tbody>
         </table>
       </div>
+    <% } else { %>
+      <div class="card-body"><p class="muted" style="margin:0">Passwords are on<% if (values.password_login !== '1') { %> only for administrators<% } %>. Add a method below to let people sign in with their work account.</p></div>
     <% } %>
   </section>
 
   <section class="settings-group card">
-    <header>
-      <h2>Add a sign-in method</h2>
+    <header class="card-head">
+      <h2><%- include('../partials/icon', { name: 'plus' }) %>Add a sign-in method</h2>
       <p>Pick a preset to pre-fill the usual claim and attribute names; you can change everything afterwards.</p>
     </header>
-    <div class="method-cards">
-      <% for (const [key, t] of Object.entries(types)) { %>
-        <div class="method-card">
-          <h3><%= t.label %></h3>
-          <p class="muted"><%= t.blurb %></p>
-          <form method="get" action="/admin/auth/new/<%= key %>">
-            <select name="preset" aria-label="<%= t.label %> preset"><% for (const pr of t.presets) { %><option value="<%= pr.key %>"><%= pr.label %></option><% } %></select>
-            <button class="btn" type="submit">Set up</button>
-          </form>
-        </div>
-      <% } %>
+    <div class="card-body">
+      <div class="method-cards">
+        <% for (const [key, t] of Object.entries(types)) { %>
+          <div class="method-card">
+            <span class="tile"><%- include('../partials/icon', { name: typeIcon[key] || 'key' }) %></span>
+            <h3><%= t.label %></h3>
+            <p class="muted"><%= t.blurb %></p>
+            <form method="get" action="/admin/auth/new/<%= key %>" data-no-busy>
+              <select name="preset" aria-label="<%= t.label %> preset"><% for (const pr of t.presets) { %><option value="<%= pr.key %>"><%= pr.label %></option><% } %></select>
+              <button class="btn btn-sm" type="submit">Set up</button>
+            </form>
+          </div>
+        <% } %>
+      </div>
     </div>
   </section>
 
   <form method="post" action="/admin/auth" class="settings-group card">
     <input type="hidden" name="_csrf" value="<%= csrf %>">
-    <header>
-      <h2>Options</h2>
+    <header class="card-head">
+      <h2><%- include('../partials/icon', { name: 'sliders' }) %>Options</h2>
+      <p>Apply to every method.</p>
     </header>
-    <label class="choice-field"><input type="checkbox" name="password_login" value="1" <%= values.password_login === '1' ? 'checked' : '' %>><span>Allow signing in with a portal password</span><small>Turn this off once single sign-on works so everyone goes through it. Administrators can always use their portal password at <code>/login?password=1</code>, so a broken identity provider never locks you out. Self-registration also needs this on.</small></label>
-    <label class="field"><span>Portal address</span>
-      <input type="url" name="public_url" value="<%= values.public_url %>" placeholder="<%= detectedUrl %>">
-      <small>The address people use to reach the portal, without a path. It goes into the callback URLs identity providers redirect to. Blank means use what the request says (<%= detectedUrl %> right now); set it explicitly if that looks wrong behind your proxy.</small>
-    </label>
-    <div class="actions"><button class="btn btn-primary" type="submit">Save options</button></div>
+    <div class="card-body">
+      <label class="choice-field"><input type="checkbox" name="password_login" value="1" <%= values.password_login === '1' ? 'checked' : '' %>><span>Allow signing in with a portal password</span><small>Turn this off once single sign-on works so everyone goes through it. Administrators can always use their portal password at <code>/login?password=1</code>, so a broken identity provider never locks you out. Self-registration also needs this on.</small></label>
+      <label class="field"><span>Portal address</span>
+        <input type="url" name="public_url" value="<%= values.public_url %>" placeholder="<%= detectedUrl %>" class="mono" style="max-width:30rem">
+        <small>The address people use to reach the portal, without a path. It goes into the callback URLs identity providers redirect to. Blank means use what the request says (<%= detectedUrl %> right now); set it explicitly if that looks wrong behind your proxy.</small>
+      </label>
+    </div>
+    <div class="card-foot"><button class="btn btn-primary" type="submit">Save options</button></div>
   </form>
+</div>
+</div>
 </div>
 <%- include('../partials/foot') %>

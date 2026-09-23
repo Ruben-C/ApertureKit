@@ -117,7 +117,7 @@ administrators add people from the People page. It can also be limited to
 certain email domains, and new accounts can start as members or editors.
 A private portal hides everything behind sign-in.
 
-**Enterprise sign-in.** Under Settings → Sign-in methods an administrator
+**Enterprise sign-in.** Under Admin → Sign-in methods an administrator
 can connect any number of identity providers, with no restart and nothing
 in the environment:
 

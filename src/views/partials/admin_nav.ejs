@@ -1,5 +1,19 @@
-<nav class="tabs" aria-label="Administration">
-  <a href="/admin/settings" <%- path === '/admin/settings' ? 'aria-current="page"' : '' %>>Settings</a>
-  <a href="/admin/users" <%- path.startsWith('/admin/users') ? 'aria-current="page"' : '' %>>People</a>
-  <a href="/admin/auth" <%- path.startsWith('/admin/auth') ? 'aria-current="page"' : '' %>>Sign-in methods</a>
+<%# Left-hand navigation for the admin area. On the Settings page the
+    sub-links switch sections in place (see ui.js); elsewhere they link there. %>
+<nav class="subnav" aria-label="Administration">
+  <a href="/admin/settings" <%- path === '/admin/settings' ? 'aria-current="page"' : '' %>><%- include('icon', { name: 'sliders' }) %>Settings</a>
+  <% if (path === '/admin/settings') { %>
+    <div class="subnav-sub">
+      <a href="/admin/settings#general" data-section-link>Name and words</a>
+      <a href="/admin/settings#appearance" data-section-link>Banner</a>
+      <a href="/admin/settings#accounts" data-section-link>Accounts</a>
+      <a href="/admin/settings#requests" data-section-link>Requests</a>
+      <a href="/admin/settings#webhook" data-section-link>Webhook</a>
+    </div>
+  <% } %>
+  <a href="/admin/users" <%- path.startsWith('/admin/users') ? 'aria-current="page"' : '' %>><%- include('icon', { name: 'users' }) %>People</a>
+  <a href="/admin/auth" <%- path.startsWith('/admin/auth') ? 'aria-current="page"' : '' %>><%- include('icon', { name: 'key' }) %>Sign-in methods</a>
+  <div class="subnav-title">Editing</div>
+  <a href="/editor"><%- include('icon', { name: 'layers' }) %>Categories and forms</a>
+  <a href="/requests"><%- include('icon', { name: 'inbox' }) %>Queue</a>
 </nav>

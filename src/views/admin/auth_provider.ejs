@@ -1,31 +1,36 @@
-<%- include('../partials/head') %>
-<nav class="crumbs" aria-label="Breadcrumb"><a href="/admin/auth">Sign-in methods</a> / <span><%= provider ? provider.name : `New ${typeInfo.label}` %></span></nav>
+<%- include('../partials/head', { wide: true }) %>
+<div class="with-subnav">
+<%- include('../partials/admin_nav') %>
+<div>
+<nav class="crumbs" aria-label="Breadcrumb"><a href="/admin/auth">Sign-in methods</a><%- include('../partials/icon', { name: 'chevron-right' }) %><span><%= provider ? provider.name : `New ${typeInfo.label}` %></span></nav>
 <div class="page-head">
   <div>
     <h1><%= provider ? provider.name : `Add ${typeInfo.label}` %></h1>
-    <% if (provider) { %><p class="lede"><%= typeInfo.label %><% if (!provider.enabled) { %> · switched off<% } %></p><% } %>
+    <p class="lede"><%= typeInfo.label %><% if (provider) { %> · <% if (provider.enabled) { %><span class="tag tag-live"><span class="dot"></span>On</span><% } else { %><span class="tag"><span class="dot"></span>Off</span><% } %><% } %></p>
   </div>
+  <% if (provider) { %><div class="page-actions"><a class="btn" href="/login?password=1"><%- include('../partials/icon', { name: 'external' }) %>Open sign-in page</a></div><% } %>
 </div>
 
-<% if (locals.error) { %><p class="field-error" role="alert"><%= error %></p><% } %>
-<% if (locals.test) { %><p class="flash flash-<%= test.ok ? 'success' : 'error' %>" role="status"><%= test.message %></p><% } %>
+<% if (locals.error) { %><p class="field-error" role="alert"><%- include('../partials/icon', { name: 'alert' }) %><span><%= error %></span></p><% } %>
+<% if (locals.test) { %><p class="notice <%= test.ok ? 'notice-success' : '' %>" role="status"><%- include('../partials/icon', { name: test.ok ? 'check-circle' : 'alert' }) %><span><%= test.message %></span></p><% } %>
 
-<div class="settings">
+<div class="settings" style="margin-top:<%= locals.test || locals.error ? '1.25rem' : '0' %>">
   <% if (locals.preset && preset.note) { %>
     <section class="settings-group card">
-      <header>
-        <h2>Setting up <%= preset.label %></h2>
+      <header class="card-head">
+        <h2><%- include('../partials/icon', { name: 'info' }) %>Setting up <%= preset.label %></h2>
       </header>
-      <p><%= preset.note %></p>
+      <div class="card-body"><p style="margin:0"><%= preset.note %></p></div>
     </section>
   <% } %>
 
   <% if (provider && type !== 'ldap') { %>
     <section class="settings-group card">
-      <header>
-        <h2>Give these to your identity provider</h2>
+      <header class="card-head">
+        <h2><%- include('../partials/icon', { name: 'link' }) %>Give these to your identity provider</h2>
         <p>If the address looks wrong, set the portal address under <a href="/admin/auth">Sign-in methods → Options</a>.</p>
       </header>
+      <div class="card-body">
       <% if (type === 'oidc') { %>
         <dl class="kv">
           <dt>Redirect URI</dt><dd><code><%= base %>/auth/<%= provider.id %>/callback</code></dd>
@@ -37,22 +42,24 @@
           <dt>Entity ID / Audience</dt><dd><code><%= provider.config.sp_entity_id || `${base}/auth/${provider.id}/metadata` %></code></dd>
           <dt>ACS / Reply URL</dt><dd><code><%= base %>/auth/<%= provider.id %>/callback</code> (HTTP-POST binding)</dd>
         </dl>
-        <p class="muted">Requests are not signed and assertions must not be encrypted.</p>
+        <p class="muted" style="margin:.75rem 0 0">Requests are not signed and assertions must not be encrypted.</p>
       <% } %>
+      </div>
     </section>
   <% } %>
 
   <form method="post" action="<%= provider ? `/admin/auth/${provider.id}` : `/admin/auth/new/${type}` %>" class="settings-group card" autocomplete="off">
     <input type="hidden" name="_csrf" value="<%= csrf %>">
-    <header>
-      <h2><%= provider ? 'Settings' : 'Details' %></h2>
+    <header class="card-head">
+      <h2><%- include('../partials/icon', { name: 'sliders' }) %><%= provider ? 'Settings' : 'Details' %></h2>
     </header>
+    <div class="card-body">
     <% for (const f of typeInfo.fields) { const v = values[f.key] ?? ''; %>
       <% if (f.type === 'checkbox') { %>
         <label class="choice-field"><input type="checkbox" name="<%= f.key %>" value="1" <%= v === '1' ? 'checked' : '' %>><span><%= f.label %></span><% if (f.help) { %><small><%= f.help %></small><% } %></label>
       <% } else if (f.type === 'select') { %>
         <label class="field"><span><%= f.label %></span>
-          <select name="<%= f.key %>"><% for (const o of f.options) { %><option value="<%= o %>" <%= v === o ? 'selected' : '' %>><%= o %></option><% } %></select>
+          <select name="<%= f.key %>" style="max-width:24rem"><% for (const o of f.options) { %><option value="<%= o %>" <%= v === o ? 'selected' : '' %>><%= o %></option><% } %></select>
           <% if (f.help) { %><small><%= f.help %></small><% } %>
         </label>
       <% } else if (f.type === 'textarea') { %>
@@ -81,19 +88,34 @@
     <% if (type === 'ldap' && provider) { %>
       <header class="form-section">
         <h2>Test the connection</h2>
-        <p>Saves nothing. Uses the values above to connect, bind, and look up a person; add their password to check it too.</p>
+        <p class="muted">Saves nothing. Uses the values above to connect, bind, and look up a person; add their password to check it too.</p>
       </header>
       <div class="form-row">
         <label class="field"><span>Username to look up</span><input name="test_username" value="<%= values.test_username || '' %>" autocomplete="off"></label>
         <label class="field"><span>Their password (optional)</span><input type="password" name="test_password" autocomplete="new-password"></label>
       </div>
     <% } %>
-
-    <div class="actions">
-      <button class="btn btn-primary" type="submit"><%= provider ? 'Save' : 'Add' %></button>
-      <% if (type === 'ldap' && provider) { %><button class="btn" type="submit" name="action" value="test">Test connection</button><% } %>
-      <% if (provider) { %><button class="linklike danger" type="submit" name="action" value="delete" onclick="return confirm('Remove <%= provider.name %>? People who signed in this way keep their accounts but will need another way in.')">Remove</button><% } %>
+    </div>
+    <div class="card-foot">
+      <button class="btn btn-primary" type="submit"><%= provider ? 'Save' : 'Add method' %></button>
+      <% if (type === 'ldap' && provider) { %><button class="btn" type="submit" name="action" value="test"><%- include('../partials/icon', { name: 'zap' }) %>Test connection</button><% } %>
+      <a class="btn btn-ghost" href="/admin/auth">Cancel</a>
     </div>
   </form>
+
+  <% if (provider) { %>
+    <section class="settings-group card danger-zone">
+      <header class="card-head">
+        <h2><%- include('../partials/icon', { name: 'alert' }) %>Remove this method</h2>
+      </header>
+      <form method="post" action="/admin/auth/<%= provider.id %>" class="card-body">
+        <input type="hidden" name="_csrf" value="<%= csrf %>">
+        <p>People who signed in this way keep their accounts but will need another way in.</p>
+        <button class="btn btn-danger" type="submit" name="action" value="delete" onclick="return confirm('Remove <%= provider.name %>? People who signed in this way keep their accounts but will need another way in.')"><%- include('../partials/icon', { name: 'trash' }) %>Remove <%= provider.name %></button>
+      </form>
+    </section>
+  <% } %>
+</div>
+</div>
 </div>
 <%- include('../partials/foot') %>

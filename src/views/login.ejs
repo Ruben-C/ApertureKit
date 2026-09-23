@@ -1,34 +1,37 @@
 <%- include('partials/head') %>
-<section class="narrow">
-  <h1>Sign in</h1>
-  <% if (settings.login_text) { %><p class="lede"><%= settings.login_text %></p><% } %>
-  <% if (locals.error) { %><p class="field-error" role="alert"><%= error %></p><% } %>
+<section class="auth">
+  <div class="auth-brand">
+    <span class="brand-mark" aria-hidden="true"></span>
+    <h1>Sign in to <%= settings.site_name %></h1>
+    <% if (settings.login_text) { %><p><%= settings.login_text %></p><% } %>
+  </div>
+  <div class="card auth-card">
+    <% if (locals.error) { %><p class="field-error" role="alert" style="margin:0"><%- include('partials/icon', { name: 'alert' }) %><span><%= error %></span></p><% } %>
 
-  <% if (signIn.buttons.length) { %>
-    <div class="sso-buttons">
-      <% for (const b of signIn.buttons) { %>
-        <a class="btn btn-sso" href="/auth/<%= b.id %>/start">Continue with <%= b.name %></a>
-      <% } %>
-    </div>
-    <% if (showPassword) { %><p class="or-rule"><span>or</span></p><% } %>
-  <% } %>
-
-  <% if (showPassword) { %>
-    <form method="post" action="/login" class="stack">
-      <input type="hidden" name="_csrf" value="<%= csrf %>">
-      <% if (signIn.ldap) { %>
-        <label class="field"><span>Username or email</span><input type="text" name="email" value="<%= values.email || '' %>" required autocomplete="username" autofocus></label>
-      <% } else { %>
-        <label class="field"><span>Email</span><input type="email" name="email" value="<%= values.email || '' %>" required autocomplete="email" autofocus></label>
-      <% } %>
-      <label class="field"><span>Password</span><input type="password" name="password" required autocomplete="current-password"></label>
-      <div class="actions">
-        <button class="btn btn-primary" type="submit">Sign in</button>
-        <% if (settings.allow_registration === '1' && signIn.password) { %><a href="/register">Create an account instead</a><% } %>
+    <% if (signIn.buttons.length) { %>
+      <div class="sso-buttons">
+        <% for (const b of signIn.buttons) { %>
+          <a class="btn btn-sso" href="/auth/<%= b.id %>/start"><%- include('partials/icon', { name: 'shield' }) %>Continue with <%= b.name %></a>
+        <% } %>
       </div>
-    </form>
-  <% } else if (!signIn.buttons.length) { %>
-    <p class="lede">No sign-in method is switched on. An administrator can sign in with a password at <a href="/login?password=1">/login?password=1</a> and fix this under Settings → Sign-in methods.</p>
-  <% } %>
+      <% if (showPassword) { %><p class="or-rule"><span>or with a password</span></p><% } %>
+    <% } %>
+
+    <% if (showPassword) { %>
+      <form method="post" action="/login" class="stack">
+        <input type="hidden" name="_csrf" value="<%= csrf %>">
+        <% if (signIn.ldap) { %>
+          <label class="field"><span>Username or email</span><input type="text" name="email" value="<%= values.email || '' %>" required autocomplete="username" autofocus></label>
+        <% } else { %>
+          <label class="field"><span>Email</span><input type="email" name="email" value="<%= values.email || '' %>" required autocomplete="email" autofocus></label>
+        <% } %>
+        <label class="field"><span>Password</span><input type="password" name="password" required autocomplete="current-password"></label>
+        <button class="btn btn-primary btn-lg" type="submit">Sign in</button>
+      </form>
+    <% } else if (!signIn.buttons.length) { %>
+      <p class="notice"><%- include('partials/icon', { name: 'alert' }) %><span>No sign-in method is switched on. An administrator can sign in with a password at <a href="/login?password=1">/login?password=1</a> and fix this under Admin → Sign-in methods.</span></p>
+    <% } %>
+  </div>
+  <% if (settings.allow_registration === '1' && signIn.password) { %><p class="auth-foot">New here? <a href="/register">Create an account</a></p><% } %>
 </section>
 <%- include('partials/foot') %>

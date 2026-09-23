@@ -1,74 +1,103 @@
-<%- include('../partials/head') %>
+<%- include('../partials/head', { wide: true }) %>
+<% const byRole = Object.groupBy(users, (u) => u.role); %>
+<div class="with-subnav">
+<%- include('../partials/admin_nav') %>
+<div>
 <div class="page-head">
   <div>
     <h1>People</h1>
-    <p class="lede">Members send requests. Editors also build forms and work the queue. Administrators also change settings and manage people.</p>
+    <p class="lede"><%= users.length %> <%= users.length === 1 ? 'person' : 'people' %> · <%= (byRole.admin || []).length %> admin<%= (byRole.admin || []).length === 1 ? '' : 's' %>, <%= (byRole.editor || []).length %> editor<%= (byRole.editor || []).length === 1 ? '' : 's' %>, <%= (byRole.member || []).length %> member<%= (byRole.member || []).length === 1 ? '' : 's' %>. Members send requests; editors also build forms and work the queue; administrators also change settings and manage people.</p>
+  </div>
+  <div class="page-actions">
+    <button class="btn btn-primary" type="button" data-dialog-open="add-person"><%- include('../partials/icon', { name: 'plus' }) %>Add a person</button>
   </div>
 </div>
-<%- include('../partials/admin_nav') %>
 
-<div class="settings settings-wide">
-  <div class="card table-wrap">
-    <table class="table stacked">
-      <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Signs in with</th><th class="num">Requests</th><th><span class="visually-hidden">Actions</span></th></tr></thead>
-      <tbody>
-        <% for (const u of users) { %>
-          <tr>
-            <td><strong><%= u.name %></strong><% if (u.id === user.id) { %> <span class="muted">(you)</span><% } %></td>
-            <td><%= u.email %></td>
-            <td>
-              <form method="post" action="/admin/users/<%= u.id %>" class="inline">
-                <input type="hidden" name="_csrf" value="<%= csrf %>">
-                <input type="hidden" name="action" value="role">
-                <select name="role" aria-label="Role for <%= u.name %>" onchange="this.form.requestSubmit()">
-                  <% for (const r of roles) { %><option value="<%= r %>" <%= u.role === r ? 'selected' : '' %>><%= r %></option><% } %>
-                </select>
-                <noscript><button class="linklike" type="submit">Set</button></noscript>
-              </form>
-            </td>
-            <td data-label="Signs in with"><% const via = signsInWith.get(u.id) || []; %><%= via.length ? via.join(', ') : (u.password_hash ? 'Password' : '—') %></td>
-            <td class="num" data-label="Requests"><%= u.request_count %></td>
-            <td>
-              <div class="row-actions">
-                <details class="inline-details">
-                  <summary>Change password</summary>
-                  <form method="post" action="/admin/users/<%= u.id %>">
-                    <input type="hidden" name="_csrf" value="<%= csrf %>">
-                    <input type="hidden" name="action" value="password">
-                    <input type="password" name="password" minlength="8" required placeholder="New password" aria-label="New password for <%= u.name %>" autocomplete="new-password">
-                    <button class="btn" type="submit">Set</button>
-                  </form>
-                </details>
-                <% if (u.id !== user.id) { %>
-                  <form method="post" action="/admin/users/<%= u.id %>" class="inline">
-                    <input type="hidden" name="_csrf" value="<%= csrf %>">
-                    <button class="linklike danger" type="submit" name="action" value="delete" onclick="return confirm('Remove <%= u.name %> and all of their requests?')">Remove</button>
-                  </form>
-                <% } %>
-              </div>
-            </td>
-          </tr>
-        <% } %>
-      </tbody>
-    </table>
-  </div>
+<% if (users.length > 5) { %>
+<div class="toolbar">
+  <form class="search" role="search" data-no-busy style="margin-left:0">
+    <%- include('../partials/icon', { name: 'search' }) %>
+    <label class="visually-hidden" for="people-filter">Filter people</label>
+    <input id="people-filter" type="search" data-filter="people" placeholder="Filter by name or email…" autocomplete="off">
+  </form>
+</div>
+<% } %>
 
-  <form method="post" action="/admin/users" class="settings-group card">
+<div class="card table-wrap" id="people">
+  <table class="table stacked">
+    <thead><tr><th>Person</th><th>Role</th><th>Signs in with</th><th class="num">Requests</th><th><span class="visually-hidden">Actions</span></th></tr></thead>
+    <tbody>
+      <% for (const u of users) { %>
+        <tr data-filter-item>
+          <td>
+            <span class="person">
+              <span class="avatar" style="--hue:<%= hue(u.name) %>" aria-hidden="true"><%= initials(u.name) %></span>
+              <span><strong><%= u.name %><% if (u.id === user.id) { %> <span class="muted" style="font-weight:400">(you)</span><% } %></strong><small><%= u.email %></small></span>
+            </span>
+          </td>
+          <td data-label="Role">
+            <form method="post" action="/admin/users/<%= u.id %>" class="inline" data-no-busy>
+              <input type="hidden" name="_csrf" value="<%= csrf %>">
+              <input type="hidden" name="action" value="role">
+              <select name="role" aria-label="Role for <%= u.name %>" onchange="this.form.requestSubmit()">
+                <% for (const r of roles) { %><option value="<%= r %>" <%= u.role === r ? 'selected' : '' %>><%= r %></option><% } %>
+              </select>
+              <noscript><button class="linklike" type="submit">Set</button></noscript>
+            </form>
+          </td>
+          <td data-label="Signs in with"><% const via = signsInWith.get(u.id) || []; %><%= via.length ? via.join(', ') : (u.password_hash ? 'Password' : '—') %></td>
+          <td class="num" data-label="Requests"><%= u.request_count %></td>
+          <td>
+            <div class="row-actions">
+              <details class="inline-details">
+                <summary>Change password</summary>
+                <form method="post" action="/admin/users/<%= u.id %>">
+                  <input type="hidden" name="_csrf" value="<%= csrf %>">
+                  <input type="hidden" name="action" value="password">
+                  <input type="password" name="password" minlength="8" required placeholder="New password" aria-label="New password for <%= u.name %>" autocomplete="new-password">
+                  <button class="btn btn-sm" type="submit">Set</button>
+                </form>
+              </details>
+              <% if (u.id !== user.id) { %>
+                <span class="divider"></span>
+                <form method="post" action="/admin/users/<%= u.id %>" class="inline">
+                  <input type="hidden" name="_csrf" value="<%= csrf %>">
+                  <button class="icon-btn icon-btn-danger" type="submit" name="action" value="delete" aria-label="Remove <%= u.name %>" title="Remove" onclick="return confirm('Remove <%= u.name %> and all of their requests?')"><%- include('../partials/icon', { name: 'trash' }) %></button>
+                </form>
+              <% } %>
+            </div>
+          </td>
+        </tr>
+      <% } %>
+    </tbody>
+  </table>
+</div>
+
+<dialog class="dialog" id="add-person" aria-labelledby="add-person-title" <%= locals.error ? 'data-open' : '' %>>
+  <form method="post" action="/admin/users">
     <input type="hidden" name="_csrf" value="<%= csrf %>">
-    <header>
-      <h2>Add a person</h2>
-      <% if (signIn.buttons.length || signIn.ldap) { %><p>Leave the password blank if they will sign in through single sign-on or the directory.</p><% } %>
-    </header>
-    <% if (locals.error) { %><p class="field-error" role="alert"><%= error %></p><% } %>
-    <div class="form-row">
+    <div class="dialog-head">
+      <div><h2 id="add-person-title">Add a person</h2><% if (signIn.buttons.length || signIn.ldap) { %><p>Leave the password blank if they will sign in through single sign-on or the directory.</p><% } %></div>
+      <button class="icon-btn" type="button" data-dialog-close aria-label="Close"><%- include('../partials/icon', { name: 'x' }) %></button>
+    </div>
+    <div class="dialog-body">
+      <% if (locals.error) { %><p class="field-error" role="alert" style="margin:0"><%- include('../partials/icon', { name: 'alert' }) %><span><%= error %></span></p><% } %>
       <label class="field"><span>Name</span><input name="name" value="<%= values.name || '' %>" required autocomplete="off"></label>
       <label class="field"><span>Email</span><input type="email" name="email" value="<%= values.email || '' %>" required autocomplete="off"></label>
-      <label class="field"><span>Password</span><input type="password" name="password" minlength="8" <%= (signIn.buttons.length || signIn.ldap) ? '' : 'required' %> autocomplete="new-password"></label>
-      <label class="field"><span>Role</span>
-        <select name="role"><% for (const r of roles) { %><option value="<%= r %>" <%= (values.role || settings.default_role) === r ? 'selected' : '' %>><%= r %></option><% } %></select>
-      </label>
+      <div class="form-row">
+        <label class="field"><span>Password</span><input type="password" name="password" minlength="8" <%= (signIn.buttons.length || signIn.ldap) ? '' : 'required' %> autocomplete="new-password"></label>
+        <label class="field"><span>Role</span>
+          <select name="role"><% for (const r of roles) { %><option value="<%= r %>" <%= (values.role || settings.default_role) === r ? 'selected' : '' %>><%= r %></option><% } %></select>
+        </label>
+      </div>
     </div>
-    <div class="actions"><button class="btn btn-primary" type="submit">Add person</button></div>
+    <div class="dialog-foot">
+      <button class="btn" type="button" data-dialog-close>Cancel</button>
+      <button class="btn btn-primary" type="submit">Add person</button>
+    </div>
   </form>
+</dialog>
+<noscript><style>dialog.dialog { display: block; position: static; margin: 1.5rem 0; width: auto; }</style></noscript>
+</div>
 </div>
 <%- include('../partials/foot') %>

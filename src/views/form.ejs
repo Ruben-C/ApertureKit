@@ -1,21 +1,35 @@
 <%- include('partials/head') %>
-<nav class="crumbs" aria-label="Breadcrumb"><a href="/">Forms</a> / <a href="/c/<%= form.category_slug %>"><%= form.category_name %></a> / <span><%= form.title %></span></nav>
+<nav class="crumbs" aria-label="Breadcrumb"><a href="/">Forms</a><%- include('partials/icon', { name: 'chevron-right' }) %><a href="/c/<%= form.category_slug %>"><%= form.category_name %></a><%- include('partials/icon', { name: 'chevron-right' }) %><span><%= form.title %></span></nav>
+
+<% const questions = form.fields.filter((f) => !FIELD_TYPES[f.type]?.display);
+   const requiredCount = questions.filter((f) => f.required).length;
+   const hasFile = questions.some((f) => f.type === 'file');
+   const hasErrors = Object.keys(errors).length > 0;
+   const conditional = form.fields.some((f) => f.showIf); %>
+
+<div class="with-aside">
 <article class="paper card" style="--cat:<%= form.category_color %>">
   <header class="paper-head">
+    <% if (!form.published) { %><span class="tag tag-draft"><span class="dot"></span>Draft · only editors can see this</span><% } %>
     <h1><%= form.title %></h1>
     <% if (form.description) { %><p class="lede"><%= form.description %></p><% } %>
-    <% if (!form.published) { %><p class="notice">This form is a draft. Only editors can see it.</p><% } %>
   </header>
 
+  <div class="paper-body">
   <% if (!user) { %>
-    <p class="notice">You need to <a href="/login">sign in</a> to submit this form<% if (settings.allow_registration === '1') { %>, or <a href="/register">create an account</a><% } %>.</p>
+    <p class="notice notice-info"><%- include('partials/icon', { name: 'lock' }) %><span>You need to <a href="/login">sign in</a> to send this request<% if (settings.allow_registration === '1') { %>, or <a href="/register">create an account</a><% } %>.</span></p>
   <% } %>
 
-  <% const hasErrors = Object.keys(errors).length > 0; %>
-  <% if (hasErrors) { %><p class="field-error" role="alert">Fix the highlighted fields and send again.</p><% } %>
+  <% if (hasErrors) { %>
+    <div class="error-summary" role="alert" tabindex="-1" id="error-summary">
+      <p><%- include('partials/icon', { name: 'alert' }) %>Fix the following and send again:</p>
+      <ul>
+        <% for (const f of form.fields) { if (errors[f.id]) { %><li><a href="#fld-<%= f.id %>"><%= f.label %></a>: <%= errors[f.id] %></li><% } } %>
+      </ul>
+    </div>
+  <% } %>
 
-  <% const conditional = form.fields.some((f) => f.showIf); %>
-  <form method="post" action="/f/<%= form.slug %>" enctype="multipart/form-data" class="stack" <%= user ? '' : 'inert' %> <% if (conditional) { %>data-conditions="form-rules"<% } %>>
+  <form method="post" action="/f/<%= form.slug %>" enctype="multipart/form-data" class="stack" id="request-form" <%= user ? '' : 'inert' %> <% if (conditional) { %>data-conditions="form-rules"<% } %>>
     <input type="hidden" name="_csrf" value="<%= csrf %>">
     <% for (const f of form.fields) {
          const v = values[f.id];
@@ -31,15 +45,17 @@
 
       <div class="field <%= err ? 'has-error' : '' %>" data-field="<%= f.id %>">
         <% if (f.type === 'radio' || f.type === 'checkbox' || f.type === 'yesno') { %>
-          <fieldset>
+          <fieldset id="fld-<%= f.id %>">
             <legend><svg class="ficon q-icon" aria-hidden="true" focusable="false"><use href="#ficon-<%= f.type %>"/></svg><%= f.label %><% if (f.required) { %> <abbr title="required">*</abbr><% } %></legend>
             <% if (f.help) { %><small><%= f.help %></small><% } %>
+            <div class="choice-list <%= f.type === 'yesno' ? 'choice-inline' : '' %>">
             <% if (f.type === 'yesno') { %>
               <label class="choice"><input type="radio" name="<%= f.id %>" value="yes" <%= v === 'yes' ? 'checked' : '' %> <%= req %>> Yes</label>
               <label class="choice"><input type="radio" name="<%= f.id %>" value="no" <%= v === 'no' ? 'checked' : '' %> <%= req %>> No</label>
             <% } else { const picked = Array.isArray(v) ? v : v ? [v] : []; for (const o of f.options) { %>
               <label class="choice"><input type="<%= f.type %>" name="<%= f.id %>" value="<%= o %>" <%= picked.includes(o) ? 'checked' : '' %> <%= f.type === 'radio' ? req : '' %>> <%= o %></label>
             <% } } %>
+            </div>
           </fieldset>
         <% } else { %>
           <label for="fld-<%= f.id %>"><span><svg class="ficon q-icon" aria-hidden="true" focusable="false"><use href="#ficon-<%= f.type %>"/></svg><%= f.label %><% if (f.required) { %> <abbr title="required">*</abbr><% } %></span></label>
@@ -56,18 +72,43 @@
           <% } else if (f.type === 'file') { %>
             <input id="fld-<%= f.id %>" type="file" name="<%= f.id %>" <%= req %> <%- aria %>>
           <% } else { %>
-            <input id="fld-<%= f.id %>" type="<%= f.type === 'text' ? 'text' : f.type %>" name="<%= f.id %>" value="<%= v || '' %>" placeholder="<%= f.placeholder || '' %>" <%= req %> <%- aria %> <%= f.type === 'number' ? 'step="any"' : '' %>>
+            <input id="fld-<%= f.id %>" type="<%= f.type === 'text' ? 'text' : f.type %>" name="<%= f.id %>" value="<%= v || '' %>" placeholder="<%= f.placeholder || '' %>" <%= req %> <%- aria %> <%- f.type === 'number' ? 'step="any"' : '' %> <%- ['number', 'date'].includes(f.type) ? 'class="input-short"' : '' %>>
           <% } %>
         <% } %>
-        <% if (err) { %><p class="field-error"><%= err %></p><% } %>
+        <% if (err) { %><p class="field-error"><%- include('partials/icon', { name: 'alert', cls: 'icon-sm' }) %><%= err %></p><% } %>
       </div>
     <% } %>
-    <div class="actions">
-      <button class="btn btn-primary" type="submit" <%= user ? '' : 'disabled' %>>Send request</button>
-      <% if (can('editor')) { %><a href="/editor/forms/<%= form.id %>">Edit this form</a><% } %>
-    </div>
   </form>
+  </div>
+  <footer class="paper-foot">
+    <button class="btn btn-primary btn-lg" type="submit" form="request-form" <%= user ? '' : 'disabled' %>><%- include('partials/icon', { name: 'send' }) %>Send request</button>
+    <a class="btn btn-ghost" href="/c/<%= form.category_slug %>">Cancel</a>
+    <% if (requiredCount) { %><span class="required-note"><abbr title="required">*</abbr> required</span><% } %>
+  </footer>
 </article>
+
+<aside class="aside">
+  <div class="card card-pad">
+    <h3 style="margin-bottom:.75rem">About this form</h3>
+    <ul class="form-aside-list">
+      <li><%- include('partials/icon', { name: 'folder' }) %><span><a href="/c/<%= form.category_slug %>" style="color:inherit"><%= form.category_name %></a></span></li>
+      <li><%- include('partials/icon', { name: 'list' }) %><span><strong><%= questions.length %></strong> question<%= questions.length === 1 ? '' : 's' %><% if (requiredCount && requiredCount < questions.length) { %>, <%= requiredCount %> required<% } %> · about <%= Math.max(1, Math.ceil(questions.length / 3)) %> min</span></li>
+      <% if (hasFile) { %><li><%- include('partials/icon', { name: 'paperclip' }) %><span>Attachments up to <%= uploadLimitMb %> MB each</span></li><% } %>
+      <li><%- include('partials/icon', { name: 'clock' }) %><span>You get a ticket number and can follow progress<% if (settings.comments !== 'off') { %> and add notes<% } %> after sending.</span></li>
+    </ul>
+  </div>
+  <% if (settings.footer_text) { %>
+    <div class="card card-pad">
+      <h3 style="margin-bottom:.35rem">Need help?</h3>
+      <p class="muted" style="margin:0;font-size:.9rem"><%= settings.footer_text %></p>
+    </div>
+  <% } %>
+  <% if (can('editor')) { %>
+    <a class="btn" href="/editor/forms/<%= form.id %>"><%- include('partials/icon', { name: 'edit' }) %>Edit this form</a>
+  <% } %>
+</aside>
+</div>
+
 <% if (conditional) { %>
   <script type="application/json" id="form-rules"><%- JSON.stringify(form.fields.map(({ id, type, showIf }) => ({ id, type, showIf }))).replaceAll('<', '\\u003c') %></script>
   <script type="module" src="/static/form-conditions.js?v=<%= assetVersion %>"></script>

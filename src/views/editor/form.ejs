@@ -1,34 +1,50 @@
-<%- include('../partials/head') %>
-<nav class="crumbs" aria-label="Breadcrumb"><a href="/editor">Categories and forms</a> / <span><%= form.id ? form.title : 'New form' %></span></nav>
+<%- include('../partials/head', { wide: true }) %>
+<nav class="crumbs" aria-label="Breadcrumb"><a href="/editor">Categories and forms</a><%- include('../partials/icon', { name: 'chevron-right' }) %><span><%= form.id ? form.title : 'New form' %></span></nav>
 <div class="page-head">
-  <h1><%= form.id ? 'Edit form' : 'New form' %></h1>
-  <% if (form.id) { %><div class="page-actions"><a href="/f/<%= form.slug %>">Preview as a member</a></div><% } %>
+  <div>
+    <h1><%= form.id ? form.title : 'New form' %></h1>
+    <p class="lede"><% if (form.id) { %><span class="tag <%= form.published ? 'tag-live' : 'tag-draft' %>"><span class="dot"></span><%= form.published ? 'Published' : 'Draft' %></span> &nbsp;Add questions on the right, set the title and category on the left.<% } else { %>Give it a title and a category, then add questions.<% } %></p>
+  </div>
+  <div class="page-actions">
+    <% if (form.id) { %><a class="btn" href="/f/<%= form.slug %>"><%- include('../partials/icon', { name: 'eye' }) %>Preview</a><% } %>
+    <button class="btn btn-primary" type="submit" form="builder-form"><%- include('../partials/icon', { name: 'check' }) %><%= form.id ? 'Save form' : 'Create form' %></button>
+  </div>
 </div>
-<% if (locals.error) { %><p class="field-error" role="alert"><%= error %></p><% } %>
+<% if (locals.error) { %><p class="field-error" role="alert"><%- include('../partials/icon', { name: 'alert' }) %><span><%= error %></span></p><% } %>
 
 <form method="post" action="<%= form.id ? `/editor/forms/${form.id}` : '/editor/forms' %>" class="builder" id="builder-form">
   <input type="hidden" name="_csrf" value="<%= csrf %>">
 
-  <div class="builder-side card">
-    <label class="field"><span>Title</span><input name="title" value="<%= form.title %>" required maxlength="150"></label>
-    <label class="field"><span>Category</span>
-      <select name="category_id"><% for (const c of categories) { %><option value="<%= c.id %>" <%= c.id === form.category_id ? 'selected' : '' %>><%= c.name %></option><% } %></select>
-    </label>
-    <label class="field"><span>Description</span><textarea name="description" rows="3" maxlength="2000"><%= form.description %></textarea><small>Shown above the form and in the directory.</small></label>
-    <label class="field"><span>Confirmation message</span><textarea name="confirmation" rows="3" maxlength="2000"><%= form.confirmation %></textarea><small>Shown after someone sends the request.</small></label>
-    <label class="choice-field"><input type="checkbox" name="published" value="1" <%= form.published ? 'checked' : '' %>><span>Published</span><small>Visible to members. Drafts can still be previewed by editors.</small></label>
-    <div class="actions">
-      <button class="btn btn-primary" type="submit"><%= form.id ? 'Save form' : 'Create form' %></button>
-      <% if (form.id) { %><button class="linklike danger" type="submit" name="action" value="delete" formnovalidate onclick="return confirm('Delete this form and all of its requests?')">Delete form</button><% } %>
+  <div class="builder-side">
+    <div class="card">
+      <div class="card-head"><h2>Form settings</h2></div>
+      <div class="card-body">
+        <label class="field"><span>Title</span><input name="title" value="<%= form.title %>" required maxlength="150" placeholder="e.g. Request a laptop"></label>
+        <label class="field"><span>Category</span>
+          <select name="category_id"><% for (const c of categories) { %><option value="<%= c.id %>" <%= c.id === form.category_id ? 'selected' : '' %>><%= c.name %></option><% } %></select>
+        </label>
+        <label class="field"><span>Description</span><textarea name="description" rows="3" maxlength="2000"><%= form.description %></textarea><small>Shown above the form and in the directory.</small></label>
+        <label class="field"><span>Confirmation message</span><textarea name="confirmation" rows="3" maxlength="2000"><%= form.confirmation %></textarea><small>Shown after someone sends the request.</small></label>
+        <label class="choice-field"><input type="checkbox" name="published" value="1" <%= form.published ? 'checked' : '' %>><span>Published</span><small>Visible to members. Drafts can still be previewed by editors.</small></label>
+      </div>
+      <div class="card-foot">
+        <button class="btn btn-primary" type="submit"><%= form.id ? 'Save form' : 'Create form' %></button>
+        <% if (form.id) { %><button class="linklike danger push" type="submit" name="action" value="delete" formnovalidate onclick="return confirm('Delete this form and all of its requests?')">Delete form</button><% } %>
+      </div>
     </div>
   </div>
 
   <form-builder class="builder-main" for="fields-json" types="field-types">
     <div class="builder-head">
       <h2>Questions</h2>
+      <span class="muted" style="font-size:.875rem">Drag a question, or use the arrows, to reorder.</span>
     </div>
     <div class="field-list" data-list></div>
-    <p class="empty" data-empty hidden>No questions yet. Pick a type below to add the first one.</p>
+    <div class="card empty" data-empty hidden>
+      <span class="tile tile-lg"><%- include('../partials/icon', { name: 'list' }) %></span>
+      <h2>No questions yet</h2>
+      <p>Pick a type below to add the first one.</p>
+    </div>
     <div class="add-palette" role="group" aria-labelledby="add-palette-title">
       <p class="add-palette-title" id="add-palette-title">Add a question</p>
       <div class="type-tiles">

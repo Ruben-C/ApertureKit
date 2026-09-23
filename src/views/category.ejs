@@ -1,23 +1,27 @@
 <%- include('partials/head') %>
-<nav class="crumbs" aria-label="Breadcrumb"><a href="/">Forms</a> / <span><%= category.name %></span></nav>
-<section class="dir-section" style="--cat:<%= category.color %>">
-  <div class="dir-head">
+<nav class="crumbs" aria-label="Breadcrumb"><a href="/">Forms</a><%- include('partials/icon', { name: 'chevron-right' }) %><span><%= category.name %></span></nav>
+<header class="cat-hero" style="--cat:<%= category.color %>">
+  <span class="tile tile-lg" aria-hidden="true"><%= category.name.trim()[0].toUpperCase() %></span>
+  <div>
     <h1><%= category.name %></h1>
-    <% if (category.description) { %><p><%= category.description %></p><% } %>
+    <% if (category.description) { %><p class="lede"><%= category.description %></p><% } %>
   </div>
-  <% if (!forms.length) { %>
-    <p class="muted">No published forms in this category yet.</p>
-  <% } else { %>
-    <ul class="list card">
-      <% for (const f of forms) { %>
-        <li>
-          <a class="list-row dir-row" href="/f/<%= f.slug %>">
-            <span class="dir-title"><%= f.title %></span>
-            <% if (f.description) { %><span class="dir-desc"><%= f.description %></span><% } %>
-          </a>
-        </li>
-      <% } %>
-    </ul>
-  <% } %>
-</section>
+</header>
+<% if (!forms.length) { %>
+  <div class="card empty">
+    <span class="tile tile-lg" style="--cat:<%= category.color %>"><%- include('partials/icon', { name: 'folder' }) %></span>
+    <h2>Nothing here yet</h2>
+    <p>No published forms in this category. <a href="/">See all forms</a>.</p>
+  </div>
+<% } else { %>
+  <div class="form-cards">
+    <% for (const f of forms) { %>
+      <a class="card form-card" href="/f/<%= f.slug %>" style="--cat:<%= category.color %>">
+        <h2><%= f.title %></h2>
+        <% if (f.description) { %><p><%= f.description %></p><% } %>
+        <span class="form-card-go">Open form<%- include('partials/icon', { name: 'chevron-right', cls: 'icon-sm' }) %></span>
+      </a>
+    <% } %>
+  </div>
+<% } %>
 <%- include('partials/foot') %>

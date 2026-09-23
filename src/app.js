@@ -60,6 +60,9 @@ export function createApp() {
     res.locals.FIELD_TYPES = FIELD_TYPES;
     res.locals.STATUS = STATUS;
     res.locals.fmtDate = fmtDate;
+    res.locals.fmtAgo = fmtAgo;
+    res.locals.initials = initials;
+    res.locals.hue = hue;
     res.locals.ticket = (id) => res.locals.settings.ticket_prefix + String(id).padStart(4, '0');
     // The sign-in page and header need to know which methods are on.
     res.locals.signIn = signInOptions(res.locals.settings);
@@ -133,8 +136,37 @@ function signInOptions(settings) {
   };
 }
 
+function parseDate(iso) {
+  return new Date(iso.replace(' ', 'T') + 'Z');
+}
+
 function fmtDate(iso) {
   if (!iso) return '';
-  const d = new Date(iso.replace(' ', 'T') + 'Z');
-  return d.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+  return parseDate(iso).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+}
+
+// "just now", "3 hours ago", "yesterday", "5 days ago"; past a month, the date.
+function fmtAgo(iso) {
+  if (!iso) return '';
+  const d = parseDate(iso);
+  const s = Math.max(0, (Date.now() - d.getTime()) / 1000);
+  if (s < 60) return 'just now';
+  const rtf = new Intl.RelativeTimeFormat(undefined, { numeric: 'auto' });
+  if (s < 3600) return rtf.format(-Math.round(s / 60), 'minute');
+  if (s < 86400) return rtf.format(-Math.round(s / 3600), 'hour');
+  if (s < 30 * 86400) return rtf.format(-Math.round(s / 86400), 'day');
+  return d.toLocaleDateString(undefined, { dateStyle: 'medium' });
+}
+
+// "Grace Hopper" -> "GH", "grace@example.com" -> "G".
+function initials(name) {
+  const parts = String(name || '').trim().split(/[\s@._-]+/).filter(Boolean);
+  return ((parts[0]?.[0] || '') + (parts.length > 1 ? parts[parts.length - 1][0] : '')).toUpperCase() || '?';
+}
+
+// A stable hue per name, so the same person always gets the same avatar color.
+function hue(name) {
+  let h = 0;
+  for (const ch of String(name || '')) h = (h * 31 + ch.codePointAt(0)) % 360;
+  return h;
 }

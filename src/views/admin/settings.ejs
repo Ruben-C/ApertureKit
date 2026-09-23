@@ -1,107 +1,131 @@
-<%- include('../partials/head') %>
-<div class="page-head">
-  <h1>Settings</h1>
-</div>
+<%- include('../partials/head', { wide: true }) %>
+<div class="with-subnav">
 <%- include('../partials/admin_nav') %>
+<div>
+<div class="page-head">
+  <div>
+    <h1>Settings</h1>
+    <p class="lede">How the portal looks, who can use it, and how requests behave. Changes apply once you save.</p>
+  </div>
+</div>
 
-<form method="post" action="/admin/settings" enctype="multipart/form-data" class="settings">
+<form method="post" action="/admin/settings" enctype="multipart/form-data" class="settings" data-dirty-watch>
   <input type="hidden" name="_csrf" value="<%= csrf %>">
 
-  <section class="settings-group card">
-    <header>
-      <h2>Name and words</h2>
+  <section class="settings-group card settings-section" id="general" aria-labelledby="general-title">
+    <header class="card-head">
+      <h2 id="general-title"><%- include('../partials/icon', { name: 'edit' }) %>Name and words</h2>
       <p>What the portal calls itself and says to people.</p>
     </header>
-    <label class="field"><span>Portal name</span><input name="site_name" value="<%= values.site_name %>" maxlength="80" placeholder="<%= defaults.site_name %>"><small>Shown in the header, banner, and browser tab.</small></label>
-    <label class="field"><span>Tagline</span><input name="tagline" value="<%= values.tagline %>" maxlength="200"><small>One line under the name in the banner.</small></label>
-    <label class="field"><span>Welcome text</span><textarea name="welcome_text" rows="2" maxlength="1000"><%= values.welcome_text %></textarea><small>Shown on the home page above the forms.</small></label>
-    <label class="field"><span>Sign-in page text</span><textarea name="login_text" rows="2" maxlength="500" placeholder="e.g. Use your work email address."><%= values.login_text %></textarea><small>Shown above the sign-in form. Leave blank for none.</small></label>
-    <label class="field"><span>Footer text</span><input name="footer_text" value="<%= values.footer_text %>" maxlength="500" placeholder="e.g. Questions? Email the help desk."><small>Shown at the bottom of every page. Leave blank for none.</small></label>
-    <label class="choice-field"><input type="checkbox" name="show_credit" value="1" <%= values.show_credit === '1' ? 'checked' : '' %>><span>Show “runs on PortalCake” in the footer</span></label>
-  </section>
-
-  <section class="settings-group card">
-    <header>
-      <h2>Banner</h2>
-      <p>The block at the top of the home page. Changes preview here as you type.</p>
-    </header>
-    <div class="banner-preview <%= values.banner_image ? 'banner-image' : '' %>" id="banner-preview"
-         style="--banner:<%= values.banner_color %>;--banner-ink:<%= values.banner_text_color %>;<% if (values.banner_image) { %>background-image:url('/branding/<%= values.banner_image %>')<% } %>">
-      <div class="banner-inner">
-        <p class="banner-title" id="preview-title"><%= values.site_name %></p>
-        <p class="banner-tagline" id="preview-tagline"><%= values.tagline %></p>
+    <div class="card-body">
+      <div class="form-row">
+        <label class="field"><span>Portal name</span><input name="site_name" value="<%= values.site_name %>" maxlength="80" placeholder="<%= defaults.site_name %>"><small>Header, banner, and browser tab.</small></label>
+        <label class="field"><span>Tagline</span><input name="tagline" value="<%= values.tagline %>" maxlength="200"><small>One line under the name in the banner.</small></label>
       </div>
+      <label class="field"><span>Welcome text</span><textarea name="welcome_text" rows="2" maxlength="1000"><%= values.welcome_text %></textarea><small>Shown on the home page above the forms.</small></label>
+      <label class="field"><span>Sign-in page text</span><textarea name="login_text" rows="2" maxlength="500" placeholder="e.g. Use your work email address."><%= values.login_text %></textarea><small>Shown above the sign-in form. Leave blank for none.</small></label>
+      <label class="field"><span>Footer text</span><input name="footer_text" value="<%= values.footer_text %>" maxlength="500" placeholder="e.g. Questions? Email the help desk."><small>Bottom of every page, and the “Need help?” box beside each form. Leave blank for none.</small></label>
+      <label class="choice-field"><input type="checkbox" name="show_credit" value="1" <%= values.show_credit === '1' ? 'checked' : '' %>><span>Show “runs on PortalCake” in the footer</span></label>
     </div>
-    <div class="settings-row">
-      <label class="field"><span>Background color</span>
-        <span class="color-pick"><input type="color" name="banner_color" value="<%= values.banner_color %>" id="banner-color"><code data-color-for="banner_color"><%= values.banner_color %></code></span>
-        <small>Used when there is no image, and behind transparent ones.</small>
-      </label>
-      <label class="field"><span>Text color</span>
-        <span class="color-pick"><input type="color" name="banner_text_color" value="<%= values.banner_text_color %>" id="banner-ink"><code data-color-for="banner_text_color"><%= values.banner_text_color %></code></span>
-      </label>
-    </div>
-    <label class="field"><span>Banner image</span><input type="file" name="banner_image" accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml" id="banner-file"><small>PNG, JPEG, WebP, GIF, or SVG up to 8 MB. Wide images (about 3:1) work best; the image is cropped to fit.</small></label>
-    <% if (values.banner_image) { %>
-      <label class="choice-field"><input type="checkbox" name="remove_banner" value="1"><span>Remove the current image and use the color only</span></label>
-    <% } %>
   </section>
 
-  <section class="settings-group card">
-    <header>
-      <h2>Accounts</h2>
+  <section class="settings-group card settings-section" id="appearance" aria-labelledby="appearance-title">
+    <header class="card-head">
+      <h2 id="appearance-title"><%- include('../partials/icon', { name: 'paint' }) %>Banner</h2>
+      <p>The block at the top of the home page. Its color is also the accent for buttons and links everywhere. Changes preview here as you type.</p>
+    </header>
+    <div class="card-body">
+      <div class="banner-preview <%= values.banner_image ? 'banner-image' : '' %>" id="banner-preview"
+           style="--banner:<%= values.banner_color %>;--banner-ink:<%= values.banner_text_color %>;<% if (values.banner_image) { %>background-image:url('/branding/<%= values.banner_image %>')<% } %>">
+        <div class="hero-inner">
+          <p class="banner-title" id="preview-title"><%= values.site_name %></p>
+          <p class="banner-tagline" id="preview-tagline"><%= values.tagline %></p>
+        </div>
+      </div>
+      <div class="settings-row">
+        <label class="field"><span>Background color</span>
+          <span class="color-pick"><input type="color" name="banner_color" value="<%= values.banner_color %>" id="banner-color"><code data-color-for="banner_color"><%= values.banner_color %></code></span>
+          <small>Used when there is no image, and behind transparent ones.</small>
+        </label>
+        <label class="field"><span>Text color</span>
+          <span class="color-pick"><input type="color" name="banner_text_color" value="<%= values.banner_text_color %>" id="banner-ink"><code data-color-for="banner_text_color"><%= values.banner_text_color %></code></span>
+        </label>
+      </div>
+      <label class="field"><span>Banner image</span><input type="file" name="banner_image" accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml" id="banner-file"><small>PNG, JPEG, WebP, GIF, or SVG up to 8 MB. Wide images (about 3:1) work best; the image is cropped to fit.</small></label>
+      <% if (values.banner_image) { %>
+        <label class="choice-field"><input type="checkbox" name="remove_banner" value="1"><span>Remove the current image and use the color only</span></label>
+      <% } %>
+    </div>
+  </section>
+
+  <section class="settings-group card settings-section" id="accounts" aria-labelledby="accounts-title">
+    <header class="card-head">
+      <h2 id="accounts-title"><%- include('../partials/icon', { name: 'users' }) %>Accounts</h2>
       <p>Who can see the portal and who can join it. Single sign-on and directory sign-in are set up under <a href="/admin/auth">Sign-in methods</a>.</p>
     </header>
-    <label class="choice-field"><input type="checkbox" name="require_login" value="1" <%= values.require_login === '1' ? 'checked' : '' %>><span>Private portal: everyone must sign in before seeing any forms</span><small>When off, anyone can browse the forms but still needs an account to send a request.</small></label>
-    <label class="choice-field"><input type="checkbox" name="allow_registration" value="1" <%= values.allow_registration === '1' ? 'checked' : '' %>><span>Anyone can create an account</span><small>When off, only administrators can add people.</small></label>
-    <label class="field"><span>Only allow sign-ups from these email domains</span><input name="registration_domains" value="<%= values.registration_domains %>" placeholder="e.g. example.com, example.org"><small>Comma-separated. Leave blank to accept any address. Administrators can always add people from any domain.</small></label>
-    <label class="field"><span>New accounts start as</span>
-      <select name="default_role"><% for (const r of roleChoices) { %><option value="<%= r %>" <%= values.default_role === r ? 'selected' : '' %>><%= r %></option><% } %></select>
-      <small>Role for people who create their own account. Members send requests; editors also build forms and work the queue. You can change anyone's role on the People page.</small>
-    </label>
+    <div class="card-body">
+      <label class="choice-field"><input type="checkbox" name="require_login" value="1" <%= values.require_login === '1' ? 'checked' : '' %>><span>Private portal: everyone must sign in before seeing any forms</span><small>When off, anyone can browse the forms but still needs an account to send a request.</small></label>
+      <label class="choice-field"><input type="checkbox" name="allow_registration" value="1" <%= values.allow_registration === '1' ? 'checked' : '' %>><span>Anyone can create an account</span><small>When off, only administrators can add people.</small></label>
+      <div class="form-row">
+        <label class="field"><span>Only allow sign-ups from these email domains</span><input name="registration_domains" value="<%= values.registration_domains %>" placeholder="e.g. example.com, example.org"><small>Comma-separated. Leave blank to accept any address. Administrators can always add people from any domain.</small></label>
+        <label class="field"><span>New accounts start as</span>
+          <select name="default_role"><% for (const r of roleChoices) { %><option value="<%= r %>" <%= values.default_role === r ? 'selected' : '' %>><%= r %></option><% } %></select>
+          <small>Members send requests; editors also build forms and work the queue. Change anyone's role on the People page.</small>
+        </label>
+      </div>
+    </div>
   </section>
 
-  <section class="settings-group card">
-    <header>
-      <h2>Requests</h2>
+  <section class="settings-group card settings-section" id="requests" aria-labelledby="requests-title">
+    <header class="card-head">
+      <h2 id="requests-title"><%- include('../partials/icon', { name: 'inbox' }) %>Requests</h2>
       <p>How requests are numbered, discussed, and what can be attached to them.</p>
     </header>
-    <label class="field"><span>Ticket number prefix</span>
-      <span class="inline-unit"><input name="ticket_prefix" value="<%= values.ticket_prefix %>" maxlength="8" placeholder="<%= defaults.ticket_prefix %>"> <span class="muted" id="ticket-example">e.g. <%= values.ticket_prefix %>0042</span></span>
-      <small>Shown before every request number. Leave blank for plain numbers.</small>
-    </label>
-    <label class="field"><span>Who can add notes to a request</span>
-      <select name="comments"><% for (const [key, label] of Object.entries(commentChoices)) { %><option value="<%= key %>" <%= values.comments === key ? 'selected' : '' %>><%= label %></option><% } %></select>
-    </label>
-    <label class="field"><span>Largest file someone can attach</span>
-      <span class="inline-unit"><input type="number" name="max_upload_mb" value="<%= values.max_upload_mb %>" min="1" max="<%= uploadCeiling %>" step="1" inputmode="numeric"> MB</span>
-      <small>Per file, 1 to <%= uploadCeiling %> MB. If a reverse proxy sits in front of the portal, its own body-size limit also applies.</small>
-    </label>
+    <div class="card-body">
+      <div class="form-row">
+        <label class="field"><span>Ticket number prefix</span>
+          <span class="inline-unit"><input name="ticket_prefix" value="<%= values.ticket_prefix %>" maxlength="8" placeholder="<%= defaults.ticket_prefix %>"> <span class="muted num" id="ticket-example">e.g. <%= values.ticket_prefix %>0042</span></span>
+          <small>Shown before every request number. Leave blank for plain numbers.</small>
+        </label>
+        <label class="field"><span>Largest file someone can attach</span>
+          <span class="inline-unit"><input type="number" name="max_upload_mb" value="<%= values.max_upload_mb %>" min="1" max="<%= uploadCeiling %>" step="1" inputmode="numeric"> <span class="muted">MB</span></span>
+          <small>Per file, 1 to <%= uploadCeiling %> MB. A reverse proxy's own body-size limit also applies.</small>
+        </label>
+      </div>
+      <label class="field"><span>Who can add notes to a request</span>
+        <select name="comments" style="max-width:24rem"><% for (const [key, label] of Object.entries(commentChoices)) { %><option value="<%= key %>" <%= values.comments === key ? 'selected' : '' %>><%= label %></option><% } %></select>
+      </label>
+    </div>
   </section>
 
-  <section class="settings-group card" id="webhook">
-    <header>
-      <h2>Webhook</h2>
+  <section class="settings-group card settings-section" id="webhook" aria-labelledby="webhook-title">
+    <header class="card-head">
+      <h2 id="webhook-title"><%- include('../partials/icon', { name: 'zap' }) %>Webhook</h2>
       <p>Send each event to an automation tool such as n8n as a JSON POST. Leave the address blank to switch this off.</p>
     </header>
-    <label class="field"><span>Webhook address</span><input name="webhook_url" value="<%= values.webhook_url %>" maxlength="500" placeholder="https://n8n.example.com/webhook/portal" inputmode="url" autocomplete="off"><small>In n8n, add a Webhook node set to POST and paste its production URL here. Events include the answers and signed links to any attached files, valid for a week, so a workflow can download them.</small></label>
-    <label class="field"><span>Shared secret</span><input name="webhook_secret" value="<%= values.webhook_secret %>" maxlength="200" autocomplete="off"><small>Optional. Sent as the <code>X-Webhook-Secret</code> header, plus an HMAC-SHA256 of the body in <code>X-Webhook-Signature</code>. In n8n, set the Webhook node's authentication to Header Auth with that header name and this value.</small></label>
-    <div class="field">
-      <fieldset>
-        <legend>Send an event when</legend>
-        <% for (const [event, info] of Object.entries(webhookEvents)) { %>
-          <label class="choice-field"><input type="checkbox" name="<%= info.setting %>" value="1" <%= values[info.setting] === '1' ? 'checked' : '' %>><span><%= info.label %> <code class="muted"><%= event %></code></span></label>
-        <% } %>
-      </fieldset>
+    <div class="card-body">
+      <label class="field"><span>Webhook address</span><input name="webhook_url" value="<%= values.webhook_url %>" maxlength="500" placeholder="https://n8n.example.com/webhook/portal" inputmode="url" autocomplete="off" class="mono"><small>In n8n, add a Webhook node set to POST and paste its production URL here. Events include the answers and signed links to any attached files, valid for a week, so a workflow can download them.</small></label>
+      <label class="field"><span>Shared secret</span><input name="webhook_secret" value="<%= values.webhook_secret %>" maxlength="200" autocomplete="off" class="mono"><small>Optional. Sent as the <code>X-Webhook-Secret</code> header, plus an HMAC-SHA256 of the body in <code>X-Webhook-Signature</code>. In n8n, set the Webhook node's authentication to Header Auth with that header name and this value.</small></label>
+      <div class="field">
+        <fieldset>
+          <legend>Send an event when</legend>
+          <% for (const [event, info] of Object.entries(webhookEvents)) { %>
+            <label class="choice-field"><input type="checkbox" name="<%= info.setting %>" value="1" <%= values[info.setting] === '1' ? 'checked' : '' %>><span><%= info.label %> <code class="muted"><%= event %></code></span></label>
+          <% } %>
+        </fieldset>
+      </div>
+      <div class="actions"><button class="btn" type="submit" name="action" value="webhook_test"><%- include('../partials/icon', { name: 'send' }) %>Save and send a test event</button><small style="margin:0">Posts a <code>webhook.test</code> event so you can see the connection work.</small></div>
     </div>
-    <p><button class="btn" type="submit" name="action" value="webhook_test">Save and send a test event</button> <small class="muted">Posts a <code>webhook.test</code> event so you can see the connection work.</small></p>
   </section>
 
-  <div class="actions">
-    <button class="btn btn-primary" type="submit">Save settings</button>
-    <button class="linklike" type="submit" name="action" value="reset" onclick="return confirm('Reset every setting on this page to the defaults? The banner image is removed too.')">Reset to defaults</button>
+  <div class="save-bar">
+    <button class="btn btn-primary" type="submit"><%- include('../partials/icon', { name: 'check' }) %>Save settings</button>
+    <span class="muted" data-dirty-note hidden>You have unsaved changes.</span>
+    <button class="linklike push" type="submit" name="action" value="reset" formnovalidate onclick="return confirm('Reset every setting on this page to the defaults? The banner image is removed too.')">Reset to defaults</button>
   </div>
 </form>
+</div>
+</div>
 
 <script>
   // Live preview of the banner while editing.

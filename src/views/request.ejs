@@ -1,10 +1,12 @@
 <%- include('partials/head') %>
 <%# Questions hidden by a show-when rule have no answer at all, so they are not listed. %>
-<% const fields = request.snapshot.fields.filter((f) => !FIELD_TYPES[f.type].display && f.id in request.answers); %>
-<nav class="crumbs" aria-label="Breadcrumb"><a href="/requests<%= can('editor') && request.user_id === user.id ? '?mine=1' : '' %>">Requests</a> / <span><%= ticket(request.id) %></span></nav>
+<% const fields = request.snapshot.fields.filter((f) => !FIELD_TYPES[f.type].display && f.id in request.answers);
+   const fileCount = Object.values(attachments).reduce((n, list) => n + list.length, 0);
+   const listHref = `/requests${can('editor') && request.user_id === user.id ? '?mine=1' : ''}`; %>
+<nav class="crumbs" aria-label="Breadcrumb"><a href="<%= listHref %>"><%= can('editor') && request.user_id !== user.id ? 'Queue' : 'My requests' %></a><%- include('partials/icon', { name: 'chevron-right' }) %><span><%= ticket(request.id) %></span></nav>
 
 <% if (justSubmitted) { %>
-  <div class="received">
+  <div class="received card">
     <div class="stamp" aria-hidden="true">Received</div>
     <div>
       <p class="received-title">Request <%= ticket(request.id) %> sent</p>
@@ -13,61 +15,92 @@
   </div>
 <% } %>
 
-<article class="ticket card">
-  <header class="ticket-head">
-    <div>
-      <p class="ticket-no big"><%= ticket(request.id) %></p>
-      <h1><%= request.snapshot.title %></h1>
-      <p class="muted"><%= request.snapshot.category %> · from <%= request.requester %><% if (can('editor')) { %> (<%= request.requester_email %>)<% } %> · <%= fmtDate(request.created_at) %></p>
-    </div>
-    <span class="status status-<%= request.status %>"><%= STATUS[request.status] %></span>
-  </header>
+<div class="with-aside">
+<div class="stack-lg">
+  <article class="card">
+    <header class="ticket-head">
+      <div>
+        <p class="ticket-no big"><%= ticket(request.id) %></p>
+        <h1><%= request.snapshot.title %></h1>
+        <p class="muted"><%= request.snapshot.category %> · sent <time datetime="<%= request.created_at %>" title="<%= fmtDate(request.created_at) %>"><%= fmtAgo(request.created_at) %></time> by <%= request.requester %></p>
+      </div>
+      <span class="status status-<%= request.status %>"><%= STATUS[request.status] %></span>
+    </header>
+    <% if (!fields.length) { %>
+      <p class="muted" style="padding:1.25rem clamp(1.25rem, 4vw, 2rem);margin:0">This form had no questions.</p>
+    <% } else { %>
+    <dl class="answers">
+      <% for (const f of fields) { const a = request.answers[f.id]; const files = attachments[f.id] || []; %>
+        <div>
+          <dt><svg class="ficon q-icon" aria-hidden="true" focusable="false"><use href="#ficon-<%= f.type %>"/></svg><span><%= f.label %></span></dt>
+          <% if (f.type === 'file') { %>
+            <dd><% if (files.length) { for (const file of files) { %><a class="file-link" href="/requests/<%= request.id %>/files/<%= file.id %>"><%- include('partials/icon', { name: 'paperclip' }) %><%= file.original_name %> <span class="muted"><%= Math.max(1, Math.round(file.size / 1024)) %> KB</span></a><% } } else { %><span class="muted">No file</span><% } %></dd>
+          <% } else { %>
+            <dd><%= Array.isArray(a) ? (a.length ? a.join(', ') : '—') : f.type === 'yesno' && a ? { yes: 'Yes', no: 'No' }[a] || a : (a || '—') %></dd>
+          <% } %>
+        </div>
+      <% } %>
+    </dl>
+    <% } %>
+  </article>
 
+  <% if (settings.comments !== 'off' || comments.length) { %>
+  <section id="comments" class="card" aria-labelledby="notes-title">
+    <div class="card-head"><h2 id="notes-title">Notes<% if (comments.length) { %><span class="count"><%= comments.length %></span><% } %></h2></div>
+    <div class="card-body">
+      <% if (!comments.length) { %><p class="muted" style="margin-bottom:1rem"><%= canComment ? 'Nothing yet. Use notes to ask a question or add information.' : 'Nothing yet.' %></p><% } %>
+      <% if (comments.length) { %>
+      <ol class="timeline">
+        <% for (const c of comments) { %>
+          <li>
+            <span class="avatar" style="--hue:<%= hue(c.author) %>" aria-hidden="true"><%= initials(c.author) %></span>
+            <article class="comment <%= c.author_role !== 'member' ? 'comment-staff' : '' %>">
+              <p class="comment-meta"><strong><%= c.author %></strong><% if (c.author_role !== 'member') { %><span class="tag tag-role tag-role-<%= c.author_role %>"><%= c.author_role %></span><% } %><time datetime="<%= c.created_at %>" title="<%= fmtDate(c.created_at) %>"><%= fmtAgo(c.created_at) %></time></p>
+              <p><%= c.body %></p>
+            </article>
+          </li>
+        <% } %>
+      </ol>
+      <% } %>
+      <% if (canComment) { %>
+        <form method="post" action="/requests/<%= request.id %>/comments" class="composer">
+          <input type="hidden" name="_csrf" value="<%= csrf %>">
+          <span class="avatar" style="--hue:<%= hue(user.name) %>" aria-hidden="true"><%= initials(user.name) %></span>
+          <div>
+            <label class="visually-hidden" for="note-body">Add a note</label>
+            <textarea id="note-body" name="body" rows="3" required maxlength="5000" placeholder="Add a note…"></textarea>
+            <div class="actions"><button class="btn btn-primary" type="submit"><%- include('partials/icon', { name: 'send' }) %>Add note</button></div>
+          </div>
+        </form>
+      <% } else if (settings.comments === 'staff') { %>
+        <p class="muted" style="margin:0">Only editors can add notes here.</p>
+      <% } %>
+    </div>
+  </section>
+  <% } %>
+</div>
+
+<aside class="aside">
   <% if (can('editor')) { %>
-    <form method="post" action="/requests/<%= request.id %>/status" class="status-form">
+    <form method="post" action="/requests/<%= request.id %>/status" class="card card-pad status-form">
       <input type="hidden" name="_csrf" value="<%= csrf %>">
-      <label for="status">Set status</label>
+      <label for="status" class="meta-label" style="font-weight:600;font-size:.9rem">Status</label>
       <select id="status" name="status">
         <% for (const [key, label] of Object.entries(STATUS)) { %><option value="<%= key %>" <%= request.status === key ? 'selected' : '' %>><%= label %></option><% } %>
       </select>
-      <button class="btn" type="submit">Update</button>
+      <button class="btn" type="submit">Update status</button>
     </form>
   <% } %>
-
-  <dl class="answers">
-    <% for (const f of fields) { const a = request.answers[f.id]; const files = attachments[f.id] || []; %>
-      <div>
-        <dt><svg class="ficon q-icon" aria-hidden="true" focusable="false"><use href="#ficon-<%= f.type %>"/></svg><%= f.label %></dt>
-        <% if (f.type === 'file') { %>
-          <dd><% if (files.length) { for (const file of files) { %><a href="/requests/<%= request.id %>/files/<%= file.id %>"><%= file.original_name %></a> <span class="muted">(<%= Math.max(1, Math.round(file.size / 1024)) %> KB)</span><% } } else { %><span class="muted">No file</span><% } %></dd>
-        <% } else { %>
-          <dd><%= Array.isArray(a) ? (a.length ? a.join(', ') : '—') : (a || '—') %></dd>
-        <% } %>
-      </div>
-    <% } %>
-  </dl>
-</article>
-
-<% if (settings.comments !== 'off' || comments.length) { %>
-<section id="comments" class="comments">
-  <h2>Notes</h2>
-  <% if (!comments.length) { %><p class="muted">Nothing yet. Use notes to ask a question or add information.</p><% } %>
-  <% for (const c of comments) { %>
-    <article class="comment <%= c.author_role !== 'member' ? 'comment-staff' : '' %>">
-      <p class="comment-meta"><strong><%= c.author %></strong><% if (c.author_role !== 'member') { %> <span class="tag"><%= c.author_role %></span><% } %> · <%= fmtDate(c.created_at) %></p>
-      <p><%= c.body %></p>
-    </article>
-  <% } %>
-  <% if (canComment) { %>
-    <form method="post" action="/requests/<%= request.id %>/comments" class="stack">
-      <input type="hidden" name="_csrf" value="<%= csrf %>">
-      <label class="field"><span>Add a note</span><textarea name="body" rows="3" required maxlength="5000"></textarea></label>
-      <div class="actions"><button class="btn" type="submit">Add note</button></div>
-    </form>
-  <% } else if (settings.comments === 'staff') { %>
-    <p class="muted">Only editors can add notes here.</p>
-  <% } %>
-</section>
-<% } %>
+  <div class="card card-pad">
+    <dl class="meta">
+      <div><dt>Requester</dt><dd class="person"><span class="avatar" style="--hue:<%= hue(request.requester) %>" aria-hidden="true"><%= initials(request.requester) %></span><span><%= request.requester %><% if (can('editor')) { %><small><%= request.requester_email %></small><% } %></span></dd></div>
+      <div><dt>Category</dt><dd><%= request.snapshot.category %></dd></div>
+      <div><dt>Sent</dt><dd><%= fmtDate(request.created_at) %></dd></div>
+      <% if (request.updated_at && request.updated_at !== request.created_at) { %><div><dt>Last updated</dt><dd><%= fmtDate(request.updated_at) %></dd></div><% } %>
+      <div><dt>Answers</dt><dd><%= fields.length %><% if (fileCount) { %> · <%= fileCount %> file<%= fileCount === 1 ? '' : 's' %><% } %></dd></div>
+    </dl>
+  </div>
+</aside>
+</div>
 <%- include('partials/field_sprite') %>
 <%- include('partials/foot') %>

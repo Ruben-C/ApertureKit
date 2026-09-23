@@ -143,7 +143,14 @@ router.get('/', (req, res) => {
   const forms = all('SELECT id, category_id, slug, title, description FROM forms WHERE published = 1 ORDER BY sort_order, title');
   const byCategory = new Map(categories.map((c) => [c.id, { ...c, forms: [] }]));
   for (const f of forms) byCategory.get(f.category_id)?.forms.push(f);
-  res.render('home', { title: null, categories: [...byCategory.values()].filter((c) => c.forms.length) });
+  // Signed in: a glance at your own requests above the directory.
+  const you = req.user && {
+    open: one("SELECT COUNT(*) AS n FROM requests WHERE user_id = ? AND status IN ('new','in_progress')", req.user.id).n,
+    total: one('SELECT COUNT(*) AS n FROM requests WHERE user_id = ?', req.user.id).n,
+    recent: all('SELECT id, status, form_snapshot FROM requests WHERE user_id = ? ORDER BY created_at DESC LIMIT 3', req.user.id)
+      .map((r) => ({ ...r, title: JSON.parse(r.form_snapshot).title })),
+  };
+  res.render('home', { title: null, categories: [...byCategory.values()].filter((c) => c.forms.length), you });
 });
 
 router.get('/c/:slug', (req, res) => {

@@ -1,43 +1,77 @@
 <%- include('partials/head') %>
-<section class="banner <%= settings.banner_image ? 'banner-image' : '' %>" <% if (settings.banner_image) { %>style="background-image:url('/branding/<%= settings.banner_image %>')"<% } %>>
-  <div class="banner-inner">
+<section class="hero <%= settings.banner_image ? 'banner-image' : '' %>" <% if (settings.banner_image) { %>style="background-image:url('/branding/<%= settings.banner_image %>')"<% } %>>
+  <div class="hero-inner">
     <h1 class="banner-title"><%= settings.site_name %></h1>
     <% if (settings.tagline) { %><p class="banner-tagline"><%= settings.tagline %></p><% } %>
+    <% if (categories.length) { %>
+      <form class="hero-search" role="search" data-no-busy>
+        <label class="search">
+          <%- include('partials/icon', { name: 'search' }) %>
+          <span class="visually-hidden">Find a form</span>
+          <input type="search" data-filter="directory" placeholder="What do you need? Try “laptop” or “leave”" autocomplete="off">
+        </label>
+      </form>
+    <% } %>
   </div>
 </section>
 
-<% if (settings.welcome_text) { %><p class="lede"><%= settings.welcome_text %></p><% } %>
+<% if (settings.welcome_text) { %><p class="lede welcome"><%= settings.welcome_text %></p><% } %>
+
+<% if (you && you.total) { %>
+  <section class="card home-you" aria-label="Your requests">
+    <div class="home-you-recent">
+      <span class="muted nowrap"><strong class="num" style="color:var(--ink)"><%= you.open %></strong> open request<%= you.open === 1 ? '' : 's' %> of <span class="num"><%= you.total %></span></span>
+      <% for (const r of you.recent) { %>
+        <a href="/requests/<%= r.id %>"><span class="status status-<%= r.status %> status-dot" title="<%= STATUS[r.status] %>"><span class="visually-hidden"><%= STATUS[r.status] %></span></span><span class="ticket-no"><%= ticket(r.id) %></span><%= r.title %></a>
+      <% } %>
+    </div>
+    <a class="btn btn-sm" href="/requests<%= can('editor') ? '?mine=1' : '' %>">All my requests<%- include('partials/icon', { name: 'chevron-right' }) %></a>
+  </section>
+<% } %>
 
 <% if (!categories.length) { %>
-  <div class="empty">
+  <div class="card empty">
+    <span class="tile tile-lg"><%- include('partials/icon', { name: 'layers' }) %></span>
     <h2>No forms yet</h2>
     <% if (can('editor')) { %>
-      <p>Create a category, then add a form to it and publish it.</p>
-      <p><a class="btn btn-primary" href="/editor">Start building</a></p>
+      <p>Create a category, add a form to it, and publish it. It will show up here.</p>
+      <a class="btn btn-primary" href="/editor"><%- include('partials/icon', { name: 'plus' }) %>Start building</a>
     <% } else { %>
       <p>An editor has not published any request forms yet. Check back soon.</p>
     <% } %>
   </div>
 <% } else { %>
-  <div class="directory">
+  <div class="directory" id="directory">
     <% for (const cat of categories) { %>
-      <section class="dir-section" style="--cat:<%= cat.color %>">
+      <section class="dir-section card" style="--cat:<%= cat.color %>" data-filter-group>
         <div class="dir-head">
-          <h2><a href="/c/<%= cat.slug %>"><%= cat.name %></a></h2>
-          <% if (cat.description) { %><p><%= cat.description %></p><% } %>
+          <span class="tile" aria-hidden="true"><%= cat.name.trim()[0].toUpperCase() %></span>
+          <div>
+            <h2><a href="/c/<%= cat.slug %>"><%= cat.name %></a></h2>
+            <% if (cat.description) { %><p><%= cat.description %></p><% } %>
+          </div>
+          <span class="count" title="<%= cat.forms.length %> forms"><%= cat.forms.length %></span>
         </div>
-        <ul class="list card">
+        <ul class="list">
           <% for (const f of cat.forms) { %>
-            <li>
+            <li data-filter-item>
               <a class="list-row dir-row" href="/f/<%= f.slug %>">
-                <span class="dir-title"><%= f.title %></span>
-                <% if (f.description) { %><span class="dir-desc"><%= f.description %></span><% } %>
+                <span>
+                  <span class="dir-title"><%= f.title %></span>
+                  <% if (f.description) { %><span class="dir-desc"><%= f.description %></span><% } %>
+                </span>
+                <%- include('partials/icon', { name: 'chevron-right', cls: 'chev' }) %>
               </a>
             </li>
           <% } %>
         </ul>
       </section>
     <% } %>
+    <div class="card empty search-empty" data-filter-empty hidden>
+      <span class="tile tile-lg"><%- include('partials/icon', { name: 'search' }) %></span>
+      <h2>No forms match</h2>
+      <p>Try another word, or browse the categories<% if (settings.footer_text) { %>. <%= settings.footer_text %><% } %></p>
+    </div>
   </div>
 <% } %>
 <%- include('partials/foot') %>

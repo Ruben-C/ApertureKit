@@ -1,7 +1,10 @@
 <%- include('partials/head') %>
-<section class="narrow">
-  <h1><%= title %></h1>
-  <p class="lede"><%= message %></p>
-  <p><a href="/">Back to the forms</a></p>
+<section class="auth">
+  <div class="card empty">
+    <span class="tile tile-lg"><%- include('partials/icon', { name: 'alert' }) %></span>
+    <h1 style="font-size:1.35rem;margin-bottom:.25em"><%= title %></h1>
+    <p><%= message %></p>
+    <a class="btn" href="/"><%- include('partials/icon', { name: 'arrow-left' }) %>Back to the forms</a>
+  </div>
 </section>
 <%- include('partials/foot') %>

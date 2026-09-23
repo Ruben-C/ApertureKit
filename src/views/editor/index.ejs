@@ -1,65 +1,108 @@
 <%- include('../partials/head') %>
+<% const totalForms = Object.values(byCategory).reduce((n, list) => n + list.length, 0);
+   const drafts = categories.reduce((n, c) => n + ((byCategory[c.id] || []).length - c.published_count), 0); %>
 <div class="page-head">
   <div>
     <h1>Categories and forms</h1>
-    <p class="lede">Categories group forms on the home page. Only published forms are visible to members.</p>
+    <p class="lede"><%= categories.length %> categor<%= categories.length === 1 ? 'y' : 'ies' %>, <%= totalForms %> form<%= totalForms === 1 ? '' : 's' %><% if (drafts) { %>, <%= drafts %> draft<%= drafts === 1 ? '' : 's' %><% } %>. Only published forms are visible to members.</p>
+  </div>
+  <div class="page-actions">
+    <button class="btn btn-primary" type="button" data-dialog-open="new-category"><%- include('../partials/icon', { name: 'plus' }) %>New category</button>
   </div>
 </div>
 
 <% if (!categories.length) { %>
-  <div class="empty"><h2>Start with a category</h2><p>Something like “IT”, “Facilities”, or “Events”. Forms live inside categories.</p></div>
+  <div class="card empty">
+    <span class="tile tile-lg"><%- include('../partials/icon', { name: 'layers' }) %></span>
+    <h2>Start with a category</h2>
+    <p>Something like “IT”, “Facilities”, or “Events”. Forms live inside categories, and members browse by them.</p>
+    <button class="btn btn-primary" type="button" data-dialog-open="new-category"><%- include('../partials/icon', { name: 'plus' }) %>New category</button>
+  </div>
 <% } %>
 
+<div class="stack-lg">
 <% categories.forEach((cat, i) => { const forms = byCategory[cat.id] || []; %>
-  <section class="edit-cat" style="--cat:<%= cat.color %>">
-    <details class="cat-details">
-      <summary>
-        <span class="cat-name"><%= cat.name %></span>
-        <span class="muted"><%= forms.length %> form<%= forms.length === 1 ? '' : 's' %><% if (cat.published_count < forms.length) { %>, <%= forms.length - cat.published_count %> draft<% } %></span>
-        <span class="summary-hint">Edit category</span>
-      </summary>
-      <form method="post" action="/editor/categories/<%= cat.id %>" class="cat-form card">
-        <input type="hidden" name="_csrf" value="<%= csrf %>">
-        <label class="field"><span>Name</span><input name="name" value="<%= cat.name %>" required maxlength="100"></label>
-        <label class="field"><span>Description</span><input name="description" value="<%= cat.description %>" maxlength="500"></label>
-        <label class="field"><span>Color</span><input type="color" name="color" value="<%= cat.color %>"></label>
-        <div class="actions">
-          <button class="btn" type="submit">Save</button>
-          <button class="linklike" type="submit" name="action" value="up" <%= i === 0 ? 'disabled' : '' %>>Move up</button>
-          <button class="linklike" type="submit" name="action" value="down" <%= i === categories.length - 1 ? 'disabled' : '' %>>Move down</button>
-          <button class="linklike danger" type="submit" name="action" value="delete" onclick="return confirm('Delete this category and every form and request in it?')">Delete</button>
+  <section class="edit-cat card" style="--cat:<%= cat.color %>" aria-labelledby="cat-<%= cat.id %>">
+    <div class="card-head">
+      <div class="edit-cat-title">
+        <span class="tile" aria-hidden="true"><%= cat.name.trim()[0].toUpperCase() %></span>
+        <div>
+          <h2 id="cat-<%= cat.id %>"><%= cat.name %></h2>
+          <span class="muted"><%= forms.length %> form<%= forms.length === 1 ? '' : 's' %><% if (cat.published_count < forms.length) { %>, <%= forms.length - cat.published_count %> draft<%= forms.length - cat.published_count === 1 ? '' : 's' %><% } %><% if (cat.description) { %> · <%= cat.description %><% } %></span>
         </div>
+      </div>
+      <form method="post" action="/editor/categories/<%= cat.id %>" class="row-actions">
+        <input type="hidden" name="_csrf" value="<%= csrf %>">
+        <a class="btn btn-sm btn-ghost" href="/c/<%= cat.slug %>"><%- include('../partials/icon', { name: 'eye' }) %>View</a>
+        <button class="btn btn-sm btn-ghost" type="button" data-dialog-open="edit-category-<%= cat.id %>"><%- include('../partials/icon', { name: 'edit' }) %>Edit</button>
+        <span class="divider"></span>
+        <button class="icon-btn" type="submit" name="action" value="up" <%= i === 0 ? 'disabled' : '' %> aria-label="Move category up" title="Move up"><%- include('../partials/icon', { name: 'arrow-up' }) %></button>
+        <button class="icon-btn" type="submit" name="action" value="down" <%= i === categories.length - 1 ? 'disabled' : '' %> aria-label="Move category down" title="Move down"><%- include('../partials/icon', { name: 'arrow-down' }) %></button>
       </form>
-    </details>
-
-    <ul class="list card">
+    </div>
+    <ul class="list">
       <% forms.forEach((f, j) => { %>
         <li class="edit-form-row">
-          <a class="edit-form-title" href="/editor/forms/<%= f.id %>"><%= f.title %></a>
-          <span class="tag <%= f.published ? 'tag-live' : '' %>"><%= f.published ? 'Published' : 'Draft' %></span>
-          <span class="muted">updated <%= fmtDate(f.updated_at) %></span>
-          <form method="post" action="/editor/forms/<%= f.id %>" class="row-actions">
-            <input type="hidden" name="_csrf" value="<%= csrf %>">
-            <a href="/f/<%= f.slug %>">Preview</a>
-            <button class="linklike" type="submit" name="action" value="<%= f.published ? 'unpublish' : 'publish' %>"><%= f.published ? 'Unpublish' : 'Publish' %></button>
-            <button class="icon-btn" type="submit" name="action" value="up" <%= j === 0 ? 'disabled' : '' %> aria-label="Move up" title="Move up">↑</button>
-            <button class="icon-btn" type="submit" name="action" value="down" <%= j === forms.length - 1 ? 'disabled' : '' %> aria-label="Move down" title="Move down">↓</button>
+          <div>
+            <a class="edit-form-title" href="/editor/forms/<%= f.id %>"><%= f.title %></a>
+          </div>
+          <span class="tag <%= f.published ? 'tag-live' : 'tag-draft' %>"><span class="dot"></span><%= f.published ? 'Published' : 'Draft' %></span>
+          <span class="muted" title="<%= fmtDate(f.updated_at) %>">updated <%= fmtAgo(f.updated_at) %></span>
+          <form method="post" action="/editor/forms/<%= f.id %>">
+            <span class="row-actions">
+              <input type="hidden" name="_csrf" value="<%= csrf %>">
+              <a class="btn btn-sm btn-ghost" href="/f/<%= f.slug %>" title="Preview as a member"><%- include('../partials/icon', { name: 'eye' }) %>Preview</a>
+              <button class="btn btn-sm btn-ghost" type="submit" name="action" value="<%= f.published ? 'unpublish' : 'publish' %>"><%= f.published ? 'Unpublish' : 'Publish' %></button>
+              <span class="divider"></span>
+              <button class="icon-btn" type="submit" name="action" value="up" <%= j === 0 ? 'disabled' : '' %> aria-label="Move up" title="Move up"><%- include('../partials/icon', { name: 'arrow-up' }) %></button>
+              <button class="icon-btn" type="submit" name="action" value="down" <%= j === forms.length - 1 ? 'disabled' : '' %> aria-label="Move down" title="Move down"><%- include('../partials/icon', { name: 'arrow-down' }) %></button>
+            </span>
           </form>
         </li>
       <% }) %>
-      <li><a class="add-link" href="/editor/forms/new?category=<%= cat.id %>">+ New form in <%= cat.name %></a></li>
+      <li><a class="add-link" href="/editor/forms/new?category=<%= cat.id %>"><%- include('../partials/icon', { name: 'plus' }) %>New form in <%= cat.name %></a></li>
     </ul>
   </section>
-<% }) %>
 
-<section class="new-cat">
-  <h2>New category</h2>
-  <form method="post" action="/editor/categories" class="cat-form card">
+  <dialog class="dialog" id="edit-category-<%= cat.id %>" aria-labelledby="edit-cat-title-<%= cat.id %>">
+    <form method="post" action="/editor/categories/<%= cat.id %>">
+      <input type="hidden" name="_csrf" value="<%= csrf %>">
+      <div class="dialog-head">
+        <div><h2 id="edit-cat-title-<%= cat.id %>">Edit category</h2><p>Changes apply to the home page right away.</p></div>
+        <button class="icon-btn" type="button" data-dialog-close aria-label="Close"><%- include('../partials/icon', { name: 'x' }) %></button>
+      </div>
+      <div class="dialog-body">
+        <label class="field"><span>Name</span><input name="name" value="<%= cat.name %>" required maxlength="100"></label>
+        <label class="field"><span>Description</span><input name="description" value="<%= cat.description %>" maxlength="500" placeholder="What kind of requests go here"></label>
+        <label class="field"><span>Color</span><span class="color-pick"><input type="color" name="color" value="<%= cat.color %>"><small style="margin:0">Used for this category's tiles and forms.</small></span></label>
+      </div>
+      <div class="dialog-foot">
+        <button class="linklike danger" type="submit" name="action" value="delete" formnovalidate onclick="return confirm('Delete this category and every form and request in it?')">Delete category</button>
+        <button class="btn" type="button" data-dialog-close>Cancel</button>
+        <button class="btn btn-primary" type="submit">Save</button>
+      </div>
+    </form>
+  </dialog>
+<% }) %>
+</div>
+
+<dialog class="dialog" id="new-category" aria-labelledby="new-cat-title">
+  <form method="post" action="/editor/categories">
     <input type="hidden" name="_csrf" value="<%= csrf %>">
-    <label class="field"><span>Name</span><input name="name" required maxlength="100" placeholder="e.g. Facilities"></label>
-    <label class="field"><span>Description</span><input name="description" maxlength="500" placeholder="What kind of requests go here"></label>
-    <label class="field"><span>Color</span><input type="color" name="color" value="#2A4BC7"></label>
-    <div class="actions"><button class="btn btn-primary" type="submit">Add category</button></div>
+    <div class="dialog-head">
+      <div><h2 id="new-cat-title">New category</h2><p>Categories group forms on the home page.</p></div>
+      <button class="icon-btn" type="button" data-dialog-close aria-label="Close"><%- include('../partials/icon', { name: 'x' }) %></button>
+    </div>
+    <div class="dialog-body">
+      <label class="field"><span>Name</span><input name="name" required maxlength="100" placeholder="e.g. Facilities"></label>
+      <label class="field"><span>Description</span><input name="description" maxlength="500" placeholder="What kind of requests go here"></label>
+      <label class="field"><span>Color</span><span class="color-pick"><input type="color" name="color" value="#2A4BC7"><small style="margin:0">Used for this category's tiles and forms.</small></span></label>
+    </div>
+    <div class="dialog-foot">
+      <button class="btn" type="button" data-dialog-close>Cancel</button>
+      <button class="btn btn-primary" type="submit">Add category</button>
+    </div>
   </form>
-</section>
+</dialog>
+<noscript><style>dialog.dialog { display: block; position: static; margin: 1.5rem 0; width: auto; }</style></noscript>
 <%- include('../partials/foot') %>
