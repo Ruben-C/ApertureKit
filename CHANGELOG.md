@@ -1,8 +1,22 @@
 # Changelog
 
-Notable changes to PortalCake. The format follows
+Notable changes to ApertureKit. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow
 [Semantic Versioning](https://semver.org/).
+
+## [Unreleased]
+
+### Changed
+
+- **Renamed PortalCake to ApertureKit.** The package, Docker image, container
+  and volume names, the footer credit, and the webhook `User-Agent` follow
+  suit. Two things to update on an existing install:
+  - The webhook event header is now `X-ApertureKit-Event` (was
+    `X-PortalCake-Event`). Adjust any n8n workflow that reads it.
+  - The compose service and named volume are now `aperturekit` and
+    `aperturekit_data`. Data in the old `portalcake_data` volume is not moved;
+    either keep the old volume name in your compose override or copy it
+    across with the backup/restore commands in the README.
 
 ## [0.3.0] - 2026-09-22
 

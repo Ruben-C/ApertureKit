@@ -1,4 +1,4 @@
-# PortalCake
+# ApertureKit
 
 A self-hosted request portal. Editors build categories and request forms;
 members pick a form, send a request, and follow it to completion.
@@ -10,12 +10,12 @@ server, all set up from the admin pages.
 
 ## Quick start (Docker)
 
-The recommended way to run PortalCake on a self-hosted box is to build the
+The recommended way to run ApertureKit on a self-hosted box is to build the
 image from a checkout of this repo. Docker is the only requirement.
 
 ```sh
-git clone https://github.com/rcane/PortalCake.git
-cd PortalCake
+git clone https://github.com/Ruben-C/ApertureKit.git
+cd ApertureKit
 docker compose up -d --build
 ```
 
@@ -24,7 +24,7 @@ administrator account, seeds a starter category and form, and drops you
 on the Settings page to rename the portal and add a banner.
 
 Everything persistent (SQLite database, uploads, session secret) is kept in
-the `portalcake_data` volume. The container runs as an unprivileged user,
+the `aperturekit_data` volume. The container runs as an unprivileged user,
 reports its health to Docker via `/healthz`, and shuts down cleanly on
 `docker stop`.
 
@@ -43,14 +43,14 @@ To change settings, copy `.env.example` to `.env` next to
 Without Compose, the same thing by hand:
 
 ```sh
-docker build -t portalcake .
-docker run -d --name portalcake --restart unless-stopped --init \
-  -p 3000:3000 -v portalcake_data:/data -e TRUST_PROXY=1 portalcake
+docker build -t aperturekit .
+docker run -d --name aperturekit --restart unless-stopped --init \
+  -p 3000:3000 -v aperturekit_data:/data -e TRUST_PROXY=1 aperturekit
 ```
 
 To keep the data in a host directory instead of a named volume, mount it at
-`/data` (`-v /srv/portalcake:/data`, or `./data:/data` in the compose file)
-and make sure it is writable by uid 1000: `chown -R 1000:1000 /srv/portalcake`.
+`/data` (`-v /srv/aperturekit:/data`, or `./data:/data` in the compose file)
+and make sure it is writable by uid 1000: `chown -R 1000:1000 /srv/aperturekit`.
 
 ### Running without Docker
 
@@ -73,7 +73,7 @@ whether the portal is private (sign in to see anything), whether people can
 create their own accounts and from which email domains, the role new
 accounts start with, the largest file that can be attached to a request, who
 can add notes to requests (everyone involved, editors only, or nobody), the
-ticket number prefix, whether the footer credits PortalCake, and a webhook
+ticket number prefix, whether the footer credits ApertureKit, and a webhook
 address for sending events to n8n or similar. Nothing on that page needs a
 restart or an environment variable.
 
@@ -184,7 +184,7 @@ Every event carries `event`, `sent_at`, `portal` (name and address), and a
 days, so an n8n HTTP Request node can fetch the file; the signature is tied
 to the session secret, so rotating that invalidates old links). `request.status_changed`
 adds `previous_status` and `changed_by`; `comment.added` adds `comment`.
-Headers: `X-PortalCake-Event` names the event, and when a secret is set,
+Headers: `X-ApertureKit-Event` names the event, and when a secret is set,
 `X-Webhook-Secret` carries it and `X-Webhook-Signature` holds
 `sha256=<HMAC-SHA256 of the body>`. Delivery is fire-and-forget with a
 10-second timeout: the request is always saved first, and a failed POST is
@@ -224,8 +224,8 @@ monitors.
 in the current directory:
 
 ```sh
-docker run --rm -v portalcake_data:/data -v "$PWD":/backup alpine \
-  tar czf /backup/portalcake-backup.tgz -C /data .
+docker run --rm -v aperturekit_data:/data -v "$PWD":/backup alpine \
+  tar czf /backup/aperturekit-backup.tgz -C /data .
 ```
 
 Restore by extracting into an empty volume the same way (`tar xzf`), then
@@ -235,8 +235,8 @@ Restore by extracting into an empty volume the same way (`tar xzf`), then
 
 ```ini
 [Service]
-WorkingDirectory=/opt/portalcake
-Environment=PORT=3000 TRUST_PROXY=1 PORTAL_DATA_DIR=/var/lib/portalcake
+WorkingDirectory=/opt/aperturekit
+Environment=PORT=3000 TRUST_PROXY=1 PORTAL_DATA_DIR=/var/lib/aperturekit
 ExecStart=/usr/bin/node src/server.js
 Restart=on-failure
 ```

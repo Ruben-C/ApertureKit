@@ -78,8 +78,8 @@ async function deliver(url, secret, payload) {
   const body = JSON.stringify(payload);
   const headers = {
     'content-type': 'application/json',
-    'user-agent': 'PortalCake',
-    'x-portalcake-event': payload.event,
+    'user-agent': 'ApertureKit',
+    'x-aperturekit-event': payload.event,
   };
   if (secret) {
     // Two ways to check the sender: a plain shared secret (n8n "Header Auth"

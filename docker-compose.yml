@@ -4,16 +4,16 @@
 #
 # Upgrade:  git pull && docker compose up -d --build
 # Logs:     docker compose logs -f
-# Backup:   docker run --rm -v portalcake_data:/data -v "$PWD":/backup alpine \
-#             tar czf /backup/portalcake-backup.tgz -C /data .
+# Backup:   docker run --rm -v aperturekit_data:/data -v "$PWD":/backup alpine \
+#             tar czf /backup/aperturekit-backup.tgz -C /data .
 #
 # Optional settings go in a `.env` file next to this one (see .env.example).
 
 services:
-  portalcake:
+  aperturekit:
     build: .
-    image: portalcake
-    container_name: portalcake
+    image: aperturekit
+    container_name: aperturekit
     restart: unless-stopped
     init: true
     ports:

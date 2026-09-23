@@ -7,7 +7,7 @@ import os from 'node:os';
 import path from 'node:path';
 
 // Each run gets a throwaway data directory so tests never touch real data.
-process.env.PORTAL_DATA_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'portalcake-test-'));
+process.env.PORTAL_DATA_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'aperturekit-test-'));
 const { createApp } = await import('../src/app.js');
 
 let server;
@@ -184,7 +184,7 @@ test('webhook posts signed JSON to n8n-style endpoint on submit, status, and not
 
     const { headers, body } = received[1];
     assert.equal(headers['content-type'], 'application/json');
-    assert.equal(headers['x-portalcake-event'], 'request.submitted');
+    assert.equal(headers['x-aperturekit-event'], 'request.submitted');
     assert.equal(headers['x-webhook-secret'], 'shh');
     assert.equal(headers['x-webhook-signature'], 'sha256=' + crypto.createHmac('sha256', 'shh').update(body).digest('hex'));
     const payload = JSON.parse(body);
@@ -273,7 +273,7 @@ test('admin controls notes, ticket prefix, upload limit, and footer credit', asy
   assert.doesNotMatch(memberView, /name="body"/, 'member should not get the note form');
   assert.match(memberView, /Only editors can add notes/);
   assert.match(memberView, new RegExp(`REQ-${String(id).padStart(4, '0')}`));
-  assert.doesNotMatch(memberView, /runs on <a href="https:\/\/github.com\/rcane\/PortalCake"/);
+  assert.doesNotMatch(memberView, /runs on <a href="https:\/\/github.com\/Ruben-C\/ApertureKit"/);
   assert.equal((await member.post(`/requests/${id}/comments`, { body: 'hello' })).status, 403);
   assert.equal((await admin.post(`/requests/${id}/comments`, { body: 'hello' })).status, 302);
   assert.match(await (await client().get('/login')).text(), /Use your work email\./);

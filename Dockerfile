@@ -1,5 +1,5 @@
 # Build from a checkout of the repo:  docker compose up -d --build
-# (or: docker build -t portalcake . && docker run ... — see README)
+# (or: docker build -t aperturekit . && docker run ... — see README)
 #
 # node:sqlite needs Node 22.13+; the 22 line is LTS and well past that.
 FROM node:22-alpine

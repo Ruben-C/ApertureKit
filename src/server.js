@@ -4,7 +4,7 @@ import { PORT, HOST, DATA_DIR } from './config.js';
 
 const app = createApp();
 const server = app.listen(PORT, HOST, () => {
-  console.log(`PortalCake listening on http://${HOST === '0.0.0.0' ? 'localhost' : HOST}:${PORT}`);
+  console.log(`ApertureKit listening on http://${HOST === '0.0.0.0' ? 'localhost' : HOST}:${PORT}`);
   console.log(`Data directory: ${DATA_DIR}`);
 });
 

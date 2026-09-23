@@ -6,7 +6,7 @@ import path from 'node:path';
 import http from 'node:http';
 import crypto from 'node:crypto';
 
-process.env.PORTAL_DATA_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'portalcake-auth-test-'));
+process.env.PORTAL_DATA_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'aperturekit-auth-test-'));
 const { createApp } = await import('../src/app.js');
 const { resolveUser, normaliseGroups, buildConfig } = await import('../src/providers/index.js');
 const { verifyIdToken } = await import('../src/providers/oidc.js');
