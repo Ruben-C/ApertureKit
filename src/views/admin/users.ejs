@@ -25,7 +25,7 @@
 
 <div class="card table-wrap" id="people">
   <table class="table stacked">
-    <thead><tr><th>Person</th><th>Role</th><th>Signs in with</th><th class="num">Requests</th><th><span class="visually-hidden">Actions</span></th></tr></thead>
+    <thead><tr><th>Person</th><th>Role</th><th>Signs in with</th><th>Last active</th><th class="num">Requests</th><th><span class="visually-hidden">Actions</span></th></tr></thead>
     <tbody>
       <% for (const u of users) { %>
         <tr data-filter-item>
@@ -46,6 +46,8 @@
             </form>
           </td>
           <td data-label="Signs in with"><% const via = signsInWith.get(u.id) || []; %><%= via.length ? via.join(', ') : (u.password_hash ? 'Password' : '—') %></td>
+          <% const active = sessions.get(u.id); %>
+          <td data-label="Last active"><% if (active) { %><time datetime="<%= active.lastSeen.replace(' ', 'T') %>Z" title="<%= fmtDate(active.lastSeen) %>"><%= fmtAgo(active.lastSeen) %></time><small><%= active.count %> active session<%= active.count === 1 ? '' : 's' %></small><% } else { %><span class="muted">Signed out</span><% } %></td>
           <td class="num" data-label="Requests"><%= u.request_count %></td>
           <td>
             <div class="row-actions">
@@ -58,6 +60,12 @@
                   <button class="btn btn-sm" type="submit">Set</button>
                 </form>
               </details>
+              <% if (active && (u.id !== user.id || active.count > 1)) { %>
+                <form method="post" action="/admin/users/<%= u.id %>" class="inline">
+                  <input type="hidden" name="_csrf" value="<%= csrf %>">
+                  <button class="icon-btn" type="submit" name="action" value="signout" aria-label="<%= u.id === user.id ? 'Sign yourself out on other devices' : `Sign ${u.name} out everywhere` %>" title="<%= u.id === user.id ? 'Sign out other devices' : 'Sign out everywhere' %>"><%- include('../partials/icon', { name: 'logout' }) %></button>
+                </form>
+              <% } %>
               <% if (u.id !== user.id) { %>
                 <span class="divider"></span>
                 <form method="post" action="/admin/users/<%= u.id %>" class="inline">

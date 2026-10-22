@@ -73,6 +73,16 @@
           <small>Members send requests; editors also build forms and work the queue. Change anyone's role on the People page.</small>
         </label>
       </div>
+      <div class="form-row">
+        <label class="field"><span>Sign people out after this long inactive</span>
+          <select name="session_idle_minutes"><% for (const [key, label] of Object.entries(sessionIdleChoices)) { %><option value="<%= key %>" <%= values.session_idle_minutes === key ? 'selected' : '' %>><%= label %></option><% } %></select>
+          <small>Counted from the last page they opened.</small>
+        </label>
+        <label class="field"><span>Sign people out after this long regardless</span>
+          <select name="session_max_minutes"><% for (const [key, label] of Object.entries(sessionMaxChoices)) { %><option value="<%= key %>" <%= values.session_max_minutes === key ? 'selected' : '' %>><%= label %></option><% } %></select>
+          <small>Counted from when they signed in. Sign anyone out right away on the <a href="/admin/users">People</a> page.</small>
+        </label>
+      </div>
     </div>
   </section>
 

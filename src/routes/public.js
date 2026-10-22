@@ -9,6 +9,7 @@ import { parseDomains, uploadLimitMb, ROLE_CHOICES } from '../settings.js';
 import { DATA_DIR } from '../config.js';
 import { enabledProviders, resolveUser, SignInError, MODULES } from '../providers/index.js';
 import { notify } from '../webhook.js';
+import { startSession, endSession, endUserSessions } from '../sessions.js';
 
 const router = Router();
 
@@ -41,7 +42,7 @@ router.post('/setup', (req, res) => {
     'admin',
   );
   seedExamples();
-  req.session.userId = Number(result.lastInsertRowid);
+  startSession(req, Number(result.lastInsertRowid));
   req.flash('Your portal is ready. Change its name and banner under Settings.', 'success');
   res.redirect('/admin/settings');
 });
@@ -93,9 +94,8 @@ router.post('/login', async (req, res, next) => {
   if (!user) {
     return fail(signIn.ldap ? 'That username and password do not match.' : 'That email and password do not match.');
   }
-  req.session.userId = user.id;
   const dest = req.session.returnTo || '/';
-  delete req.session.returnTo;
+  startSession(req, user.id);
   res.redirect(dest);
 });
 
@@ -125,13 +125,14 @@ router.post('/register', (req, res) => {
     hashPassword(password),
     ROLE_CHOICES.includes(settings.default_role) ? settings.default_role : 'member',
   );
-  req.session.userId = Number(result.lastInsertRowid);
+  startSession(req, Number(result.lastInsertRowid));
   req.flash(`Welcome, ${name.trim()}.`, 'success');
   res.redirect('/');
 });
 
 router.post('/logout', (req, res) => {
-  req.session = null;
+  if (req.body.everywhere === '1' && req.user) endUserSessions(req.user.id);
+  endSession(req);
   // On a private portal the home page would only bounce back to sign-in.
   res.redirect(res.locals.settings.require_login === '1' ? '/login' : '/');
 });

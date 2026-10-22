@@ -71,7 +71,8 @@ and upload a banner image. One click resets everything to the defaults.
 **Everything else is a setting too.** The same Settings page controls
 whether the portal is private (sign in to see anything), whether people can
 create their own accounts and from which email domains, the role new
-accounts start with, the largest file that can be attached to a request, who
+accounts start with, how long people stay signed in (an inactivity limit and
+an overall limit, 8 hours and a week by default), the largest file that can be attached to a request, who
 can add notes to requests (everyone involved, editors only, or nobody), the
 ticket number prefix, whether the footer credits ApertureKit, and a webhook
 address for sending events to n8n or similar. Nothing on that page needs a
@@ -257,7 +258,8 @@ src/
   db.js            sqlite connection and migrations
   settings.js      branding settings and their defaults
   fields.js        question types, schema sanitising, submission validation
-  auth.js          password hashing, sessions, roles, CSRF
+  auth.js          password hashing, roles, CSRF
+  sessions.js      server-side sessions: timeouts, sign-out everywhere, revocation
   webhook.js       outgoing JSON events (n8n etc.) for requests, statuses, notes
   providers/       sign-in methods: OpenID Connect, SAML, LDAP, and account linking
   routes/          public, sso (OIDC/SAML callbacks), requests, editor, admin

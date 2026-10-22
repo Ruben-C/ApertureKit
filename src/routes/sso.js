@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { startSession } from '../sessions.js';
 import { getProvider, resolveUser, baseUrl, callbackUrl, SignInError, MODULES } from '../providers/index.js';
 
 // Redirect-based sign-in (OpenID Connect and SAML). LDAP goes through the
@@ -34,8 +35,7 @@ async function finish(req, res, next) {
       ? await MODULES.oidc.callback(req, p, callbackUrl(req, p))
       : await MODULES.saml.callback(req, p, baseUrl(req));
     const user = resolveUser(p, profile);
-    req.session.userId = user.id;
-    delete req.session.returnTo;
+    startSession(req, user.id);
     res.redirect(returnTo || '/');
   } catch (err) {
     if (err instanceof SignInError) {

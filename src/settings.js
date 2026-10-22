@@ -20,6 +20,9 @@ export const DEFAULTS = {
   registration_domains: '', // comma-separated; empty means any domain
   default_role: 'member', // role given to self-registered accounts
   require_login: '0', // '1' hides the whole portal behind sign-in
+  // Sessions (see sessions.js), in minutes
+  session_idle_minutes: '480', // signed out after this long without a visit
+  session_max_minutes: '10080', // and after this long regardless
   // Sign-in methods (the rest live in the auth_providers table)
   password_login: '1', // '0' hides the password form once SSO/LDAP is set up
   public_url: '', // e.g. https://portal.example.com; blank means work it out per request
@@ -42,6 +45,30 @@ export const COMMENT_CHOICES = {
   off: 'Nobody (notes are switched off)',
 };
 export const MAX_UPLOAD_CEILING_MB = 512;
+// Values are minutes, keyed as strings to match the stored settings.
+export const SESSION_IDLE_CHOICES = {
+  15: '15 minutes',
+  60: '1 hour',
+  240: '4 hours',
+  480: '8 hours',
+  1440: '1 day',
+  10080: '1 week',
+};
+export const SESSION_MAX_CHOICES = {
+  480: '8 hours',
+  1440: '1 day',
+  10080: '1 week',
+  43200: '30 days',
+  129600: '90 days',
+};
+
+// Session limits in milliseconds; the idle limit never exceeds the overall one.
+export function sessionLimits(settings) {
+  const pick = (value, choices, fallback) => Number(value in choices ? value : fallback) * 60_000;
+  const max = pick(settings.session_max_minutes, SESSION_MAX_CHOICES, DEFAULTS.session_max_minutes);
+  const idle = pick(settings.session_idle_minutes, SESSION_IDLE_CHOICES, DEFAULTS.session_idle_minutes);
+  return { idle: Math.min(idle, max), max };
+}
 
 export function getSettings() {
   const rows = all('SELECT key, value FROM settings');

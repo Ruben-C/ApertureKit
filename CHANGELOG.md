@@ -4,6 +4,36 @@ Notable changes to ApertureKit. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow
 [Semantic Versioning](https://semver.org/).
 
+## [0.5.0] - 2026-10-22
+
+### Added
+
+- **Sessions time out.** Sign-ins are now tracked on the server. People are
+  signed out after 8 hours without opening a page, and after a week no
+  matter what. Change both under Settings → Accounts. Someone whose session
+  ran out is told so on the sign-in page and sent back to where they were.
+- **Sign out everywhere.** The account menu has "Sign out on all devices".
+  On the People page, administrators can see when each person was last
+  active and how many sessions they have, and can sign anyone out.
+- Changing someone's password signs them out on every other device. Removing
+  a person ends their sessions at once.
+
+### Changed
+
+- Signing out now ends the session on the server, so a copied cookie stops
+  working too. **Everyone is signed out once after upgrading**, because
+  sign-ins from earlier versions were not tracked.
+
+### Fixed
+
+- The "Sign in" button in the top bar had dark text on the accent color.
+- On admin and form-builder pages, the top bar and footer now widen with the
+  content instead of sitting narrower than it.
+- On phones, "Create account" no longer wraps onto two lines in the top bar.
+  On very narrow screens it is hidden; the sign-in page still links to it.
+- The setup page no longer shows navigation and sign-in links that only led
+  back to setup.
+
 ## [0.4.0] - 2026-09-23
 
 ### Changed

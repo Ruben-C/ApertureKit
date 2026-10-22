@@ -12,12 +12,13 @@
 <script>document.documentElement.classList.add('js')</script>
 <script type="module" src="/static/ui.js?v=<%= assetVersion %>"></script>
 </head>
-<body>
+<body<%- locals.wide ? ' class="page-wide"' : '' %>>
 <a class="skip" href="#main">Skip to content</a>
 <header class="topbar">
   <div class="wrap topbar-inner">
     <a class="brand" href="/"><span class="brand-mark" aria-hidden="true"></span><span class="brand-name"><%= settings.site_name %></span></a>
-    <% if (user || settings.require_login !== '1') { %>
+    <% const setup = path.startsWith('/setup'); %>
+    <% if (!setup && (user || settings.require_login !== '1')) { %>
       <button class="icon-btn nav-toggle" type="button" data-nav-toggle aria-expanded="false" aria-controls="main-nav" aria-label="Menu"><%- include('icon', { name: 'menu' }) %></button>
       <nav class="nav" id="main-nav" aria-label="Main">
         <a href="/" <%- path === '/' || path.startsWith('/c/') || path.startsWith('/f/') ? 'aria-current="page"' : '' %>><%- include('icon', { name: 'home', cls: 'icon-sm' }) %>Forms</a>
@@ -54,12 +55,13 @@
             <form method="post" action="/logout">
               <input type="hidden" name="_csrf" value="<%= csrf %>">
               <button class="menu-item" type="submit"><%- include('icon', { name: 'logout' }) %>Sign out</button>
+              <button class="menu-item menu-item-quiet" type="submit" name="everywhere" value="1">Sign out on all devices</button>
             </form>
           </div>
         </details>
-      <% } else { %>
+      <% } else if (!setup) { %>
         <div class="topbar-links">
-          <% if (settings.allow_registration === '1' && signIn.password && path !== '/register') { %><a href="/register">Create account</a><% } %>
+          <% if (settings.allow_registration === '1' && signIn.password && path !== '/register') { %><a class="topbar-link" href="/register">Create account</a><% } %>
           <% if (path !== '/login') { %><a class="btn btn-sm btn-primary" href="/login">Sign in</a><% } %>
         </div>
       <% } %>
@@ -75,4 +77,4 @@
     </div>
   </div>
 <% } %>
-<main id="main" class="wrap main <%= locals.wide ? 'wrap-wide' : '' %>">
+<main id="main" class="wrap main">

@@ -8,7 +8,9 @@ import { requireRole, csrf, hashPassword, ROLES } from '../auth.js';
 import {
   getSettings, setSettings, resetSettings, parseDomains,
   DEFAULTS, ROLE_CHOICES, COMMENT_CHOICES, MAX_UPLOAD_CEILING_MB,
+  SESSION_IDLE_CHOICES, SESSION_MAX_CHOICES, sessionLimits,
 } from '../settings.js';
+import { endUserSessions, sessionSummary } from '../sessions.js';
 import { DATA_DIR } from '../config.js';
 import {
   TYPES, MODULES, listProviders, enabledProviders, getProvider, buildConfig, saveProvider, deleteProvider,
@@ -40,6 +42,8 @@ const settingsLocals = () => ({
   roleChoices: ROLE_CHOICES,
   commentChoices: COMMENT_CHOICES,
   uploadCeiling: MAX_UPLOAD_CEILING_MB,
+  sessionIdleChoices: SESSION_IDLE_CHOICES,
+  sessionMaxChoices: SESSION_MAX_CHOICES,
   webhookEvents: WEBHOOK_EVENTS,
 });
 
@@ -69,6 +73,8 @@ router.post('/settings', bannerUpload.single('banner_image'), csrf, async (req, 
     registration_domains: parseDomains(b.registration_domains).join(', '),
     default_role: ROLE_CHOICES.includes(b.default_role) ? b.default_role : DEFAULTS.default_role,
     require_login: flag(b.require_login),
+    session_idle_minutes: b.session_idle_minutes in SESSION_IDLE_CHOICES ? b.session_idle_minutes : current.session_idle_minutes,
+    session_max_minutes: b.session_max_minutes in SESSION_MAX_CHOICES ? b.session_max_minutes : current.session_max_minutes,
     max_upload_mb: integer(b.max_upload_mb, 1, MAX_UPLOAD_CEILING_MB, current.max_upload_mb),
     comments: b.comments in COMMENT_CHOICES ? b.comments : DEFAULTS.comments,
     // Blank is a deliberate choice here (plain numbers); only a missing field falls back.
@@ -214,7 +220,12 @@ router.get('/users', (req, res) => {
     `SELECT u.*, (SELECT COUNT(*) FROM requests r WHERE r.user_id = u.id) AS request_count
        FROM users u ORDER BY u.created_at`,
   );
-  res.render('admin/users', { title: 'People', users, roles: ROLES, values: {}, signsInWith: identitiesFor(users.map((u) => u.id)) });
+  res.render('admin/users', { title: 'People', users, roles: ROLES, values: {}, ...peopleLocals(users) });
+});
+
+const peopleLocals = (users) => ({
+  signsInWith: identitiesFor(users.map((u) => u.id)),
+  sessions: sessionSummary(sessionLimits(getSettings())),
 });
 
 router.post('/users', (req, res) => {
@@ -229,7 +240,7 @@ router.post('/users', (req, res) => {
   else if (one('SELECT 1 FROM users WHERE email = ?', email.trim())) error = 'Someone already has that email.';
   if (error) {
     const users = all('SELECT u.*, 0 AS request_count FROM users u ORDER BY u.created_at');
-    return res.status(400).render('admin/users', { title: 'People', users, roles: ROLES, values: req.body, error, signsInWith: identitiesFor(users.map((u) => u.id)) });
+    return res.status(400).render('admin/users', { title: 'People', users, roles: ROLES, values: req.body, error, ...peopleLocals(users) });
   }
   run(
     'INSERT INTO users (email, name, password_hash, role) VALUES (?, ?, ?, ?)',
@@ -259,7 +270,18 @@ router.post('/users/:id', (req, res) => {
   if (req.body.action === 'password') {
     const password = String(req.body.password || '');
     if (password.length < 8) req.flash('Use a password of at least 8 characters.', 'error');
-    else { run('UPDATE users SET password_hash = ? WHERE id = ?', hashPassword(password), target.id); req.flash(`Password changed for ${target.name}.`, 'success'); }
+    else {
+      run('UPDATE users SET password_hash = ? WHERE id = ?', hashPassword(password), target.id);
+      // Anyone signed in with the old password is signed out (you stay signed in here).
+      endUserSessions(target.id, req);
+      req.flash(`Password changed for ${target.name}. They have been signed out everywhere else.`, 'success');
+    }
+    return res.redirect('/admin/users');
+  }
+  if (req.body.action === 'signout') {
+    const n = endUserSessions(target.id, req);
+    const where = target.id === req.user.id ? ' on your other devices' : '';
+    req.flash(n ? `Signed ${target.name} out of ${n} session${n === 1 ? '' : 's'}${where}.` : `${target.name} had no other sessions.`, 'success');
     return res.redirect('/admin/users');
   }
   res.redirect('/admin/users');

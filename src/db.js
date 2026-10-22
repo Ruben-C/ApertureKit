@@ -100,6 +100,19 @@ const migrations = [
   );
   CREATE INDEX identities_user ON identities(user_id);
   `,
+  // Signed-in sessions, tracked server-side so they can time out and be
+  // revoked. The cookie carries a random token; only its SHA-256 is stored.
+  `
+  CREATE TABLE sessions (
+    id         TEXT PRIMARY KEY,
+    user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    last_seen  TEXT NOT NULL DEFAULT (datetime('now')),
+    ip         TEXT NOT NULL DEFAULT '',
+    user_agent TEXT NOT NULL DEFAULT ''
+  );
+  CREATE INDEX sessions_user ON sessions(user_id);
+  `,
 ];
 
 db.exec('CREATE TABLE IF NOT EXISTS schema_version (version INTEGER NOT NULL)');

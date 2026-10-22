@@ -1,5 +1,6 @@
 import crypto from 'node:crypto';
-import { one } from './db.js';
+import { getSettings, sessionLimits } from './settings.js';
+import { resumeSession } from './sessions.js';
 
 export const ROLES = ['member', 'editor', 'admin'];
 const rank = (role) => ROLES.indexOf(role);
@@ -18,13 +19,15 @@ export function verifyPassword(password, stored) {
   return candidate.length === expected.length && crypto.timingSafeEqual(candidate, expected);
 }
 
-// Loads the signed-in user (if any) onto req.user and the templates.
+// Loads the signed-in user (if any) onto req.user and the templates. An
+// expired session is dropped here; the next page that needs sign-in says so.
 export function loadUser(req, res, next) {
-  req.user = null;
-  if (req.session?.userId) {
-    req.user = one('SELECT id, email, name, role FROM users WHERE id = ?', req.session.userId) || null;
-    if (!req.user) req.session = null;
-  }
+  const limits = sessionLimits(getSettings());
+  // The cookie lives no longer than the longest a session can last.
+  if (req.sessionOptions) req.sessionOptions.maxAge = limits.max;
+  const { user, expired } = resumeSession(req, limits);
+  req.user = user;
+  req.sessionExpired = expired;
   res.locals.user = req.user;
   res.locals.can = (role) => !!req.user && rank(req.user.role) >= rank(role);
   next();
@@ -33,7 +36,7 @@ export function loadUser(req, res, next) {
 export function requireLogin(req, res, next) {
   if (req.user) return next();
   req.session.returnTo = req.originalUrl;
-  req.flash('Sign in to continue.');
+  req.flash(req.sessionExpired ? 'Your session timed out. Sign in again to continue.' : 'Sign in to continue.');
   res.redirect('/login');
 }
 

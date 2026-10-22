@@ -82,6 +82,7 @@ small { display: block; color: var(--muted); font-size: .85rem; line-height: 1.4
 abbr[title] { text-decoration: none; color: var(--danger); }
 code { font-family: var(--mono); font-size: .88em; background: var(--paper-deep); padding: .1em .35em; border-radius: 4px; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
+[tabindex="-1"]:focus { outline: none; } /* headings focused by script to move screen readers, not keyboard targets */
 button, input, select, textarea { font: inherit; color: inherit; }
 ::placeholder { color: var(--faint); opacity: 1; }
 .muted { color: var(--muted); }
@@ -108,7 +109,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
 
 /* --- Layout ------------------------------------------------------------- */
 .wrap { width: min(100% - 2.5rem, var(--wrap)); margin-inline: auto; }
-.wrap-wide { --wrap: var(--wrap-wide); }
+.page-wide { --wrap: var(--wrap-wide); } /* admin and builder pages: top bar, content and footer widen together */
 .main { flex: 1; padding-block: 1.75rem 4rem; }
 .skip { position: absolute; left: -100vw; top: .5rem; background: var(--ink); color: #fff; padding: .5rem 1rem; z-index: 100; border-radius: var(--radius-sm); }
 .skip:focus { left: .5rem; }
@@ -139,9 +140,11 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .nav .icon { color: var(--muted); }
 .topbar-right { margin-left: auto; display: flex; align-items: center; gap: .5rem; }
 .topbar .nav-toggle { display: none; }
-/* Signed-out: plain links on the right. */
+/* Signed-out: a plain link and the sign-in button on the right. */
 .topbar-links { display: flex; align-items: center; gap: .5rem; }
-.topbar-links a { text-decoration: none; font-weight: 500; color: var(--ink-2); padding: 0 .5rem; }
+.topbar-link { text-decoration: none; font-weight: 500; color: var(--ink-2); padding: 0 .5rem; white-space: nowrap; }
+.topbar-link:hover { color: var(--ink); }
+@media (max-width: 420px) { .topbar-link { display: none; } } /* the sign-in page links to it */
 @media (max-width: 760px) {
   .topbar .nav-toggle { display: inline-flex; }
   .js .nav { display: none; position: absolute; top: calc(var(--topbar) + .25rem); left: 1rem; right: 1rem; flex-direction: column; align-items: stretch; gap: .125rem; padding: .4rem; margin: 0; background: var(--surface); border: 1px solid var(--rule); border-radius: var(--radius); box-shadow: var(--shadow-lg); }
@@ -395,6 +398,7 @@ form[inert] { opacity: .55; }
 .menu-item { display: flex; align-items: center; gap: .6rem; width: 100%; padding: .45rem .7rem; border: 0; background: none; color: var(--ink-2); text-decoration: none; border-radius: var(--radius-sm); font-size: .92rem; font-weight: 500; cursor: pointer; text-align: left; }
 .menu-item:hover { background: var(--paper-deep); color: var(--ink); text-decoration: none; }
 .menu-item .icon { color: var(--muted); width: 1rem; height: 1rem; }
+.menu-item-quiet { color: var(--muted); font-size: .85rem; padding-left: 2.3rem; } /* lines up with the text of the item above */
 .menu-panel form { margin: 0; }
 .menu-sep { height: 1px; background: var(--rule); margin: .3rem 0; }
 @media (max-width: 760px) { .menu > summary .who { display: none; } }
