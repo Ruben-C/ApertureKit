@@ -8,6 +8,10 @@
 #             tar czf /backup/aperturekit-backup.tgz -C /data .
 #
 # Optional settings go in a `.env` file next to this one (see .env.example).
+#
+# Built-in HTTPS: set DOMAIN, TRUST_PROXY=1 and COMPOSE_PROFILES=https in
+# `.env` and the `caddy` service below starts too, fetching a Let's Encrypt
+# certificate for DOMAIN on ports 80 and 443.
 
 services:
   aperturekit:
@@ -30,5 +34,32 @@ services:
       # instead, replace with `./data:/data` and `chown -R 1000:1000 ./data`.
       - data:/data
 
+  # Only started with the `https` profile (COMPOSE_PROFILES=https in .env).
+  # Terminates TLS for DOMAIN with an automatic Let's Encrypt certificate;
+  # DOMAIN must already point at this host and ports 80/443 must be open.
+  caddy:
+    image: caddy:2-alpine
+    container_name: aperturekit-caddy
+    profiles: [https]
+    restart: unless-stopped
+    environment:
+      DOMAIN: ${DOMAIN:-}
+    command:
+      - sh
+      - -c
+      - >-
+        [ -n "$$DOMAIN" ] || { echo "Set DOMAIN in .env for the https profile"; exit 1; };
+        exec caddy reverse-proxy --from "$$DOMAIN" --to aperturekit:3000
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      # Certificates and ACME account; keep it to avoid re-issuing on restart.
+      - caddy:/data
+    depends_on:
+      - aperturekit
+
 volumes:
   data:
+  caddy:

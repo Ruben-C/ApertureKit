@@ -15,6 +15,12 @@ Notable changes to ApertureKit. The format follows
   elsewhere cannot lock the real owner out with the tight limit, and unknown
   accounts are limited the same way, so a refusal says nothing about who has
   an account. Applies to portal passwords and LDAP alike.
+- **Built-in HTTPS.** Set `COMPOSE_PROFILES=https`, `DOMAIN` and
+  `TRUST_PROXY=1` in `.env` and Compose also starts Caddy, which fetches a
+  Let's Encrypt certificate and serves the portal on ports 80 and 443.
+- **One-command Azure deployment.** `deploy/azure/deploy.sh <name>` creates
+  an Ubuntu VM with the Azure CLI, installs Docker on first boot, and serves
+  the portal at `https://<name>.<region>.cloudapp.azure.com`.
 
 ### Changed
 
