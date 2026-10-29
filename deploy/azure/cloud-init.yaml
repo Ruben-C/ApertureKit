@@ -1,0 +1,16 @@
+#cloud-config
+# First-boot setup for an Ubuntu 24.04 VM: installs Docker, checks out
+# ApertureKit into /opt/aperturekit, and starts it with built-in HTTPS.
+# deploy.sh fills in the __PLACEHOLDERS__; to use this file by hand
+# (portal or `az vm create --custom-data`), replace them yourself.
+package_update: true
+packages:
+  - docker.io
+  - docker-compose-v2
+  - git
+runcmd:
+  - systemctl enable --now docker
+  - usermod -aG docker __ADMIN_USER__
+  - git clone --branch __BRANCH__ __REPO__ /opt/aperturekit
+  - printf 'COMPOSE_PROFILES=https\nDOMAIN=%s\nTRUST_PROXY=1\n' '__DOMAIN__' > /opt/aperturekit/.env
+  - cd /opt/aperturekit && docker compose up -d --build

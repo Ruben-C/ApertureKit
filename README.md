@@ -52,6 +52,48 @@ To keep the data in a host directory instead of a named volume, mount it at
 `/data` (`-v /srv/aperturekit:/data`, or `./data:/data` in the compose file)
 and make sure it is writable by uid 1000: `chown -R 1000:1000 /srv/aperturekit`.
 
+### HTTPS without a separate proxy
+
+On a box with a public address, Compose can run Caddy alongside the portal
+and get a Let's Encrypt certificate for you. Point a DNS name at the server,
+open ports 80 and 443, and put this in `.env`:
+
+```sh
+COMPOSE_PROFILES=https
+DOMAIN=portal.example.com
+TRUST_PROXY=1
+```
+
+Then `docker compose up -d --build` as usual serves <https://portal.example.com>.
+
+### Deploy to an Azure VM
+
+With the [Azure CLI](https://learn.microsoft.com/cli/azure/install-azure-cli)
+signed in (`az login`), one command creates an Ubuntu 24.04 VM, installs
+Docker on first boot, and starts the portal with HTTPS:
+
+```sh
+deploy/azure/deploy.sh myportal westeurope
+```
+
+After about five minutes it prints
+<https://myportal.westeurope.cloudapp.azure.com>, a free Azure DNS name with
+its own certificate. Open it straight away and create the administrator
+account. Everything lives in the resource group `myportal-rg`;
+`az group delete -n myportal-rg` removes it all.
+
+Optional variables: `DOMAIN` (your own name instead; point its DNS at the
+printed IP), `VM_SIZE` (default `Standard_B1s`), `RESOURCE_GROUP`, `REPO`
+and `BRANCH`. To set the VM up yourself in the Azure portal instead, paste
+`deploy/azure/cloud-init.yaml` as *Custom data* after filling in its
+placeholders, and allow inbound ports 80 and 443.
+
+The checkout lives in `/opt/aperturekit` on the VM. To upgrade:
+
+```sh
+ssh azureuser@<ip> 'cd /opt/aperturekit && sudo git pull && sudo docker compose up -d --build'
+```
+
 ### Running without Docker
 
 Requires Node.js 24.7 or newer (it uses the built-in `node:sqlite` and Argon2).
@@ -216,7 +258,7 @@ to `docker-compose.yml`; otherwise set them as environment variables.
 ## Running in production
 
 Put it behind any reverse proxy (Caddy, nginx, Traefik) that handles HTTPS,
-and set `TRUST_PROXY=1`. The container listens on plain HTTP; a Caddyfile
+and set `TRUST_PROXY=1`, or use the [built-in one](#https-without-a-separate-proxy). The container listens on plain HTTP; a Caddyfile
 that fronts it is two lines:
 
 ```
