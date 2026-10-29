@@ -11,6 +11,7 @@ import {
   SESSION_IDLE_CHOICES, SESSION_MAX_CHOICES, sessionLimits,
 } from '../settings.js';
 import { endUserSessions, sessionSummary } from '../sessions.js';
+import { attachmentFilesWhere, removeAttachmentFiles } from '../uploads.js';
 import { DATA_DIR } from '../config.js';
 import {
   TYPES, MODULES, listProviders, enabledProviders, getProvider, buildConfig, saveProvider, deleteProvider,
@@ -258,7 +259,12 @@ router.post('/users/:id', async (req, res) => {
 
   if (req.body.action === 'delete') {
     if (lastAdmin) req.flash('You cannot remove the only administrator.', 'error');
-    else { run('DELETE FROM users WHERE id = ?', target.id); req.flash(`Removed ${target.name}.`, 'success'); }
+    else {
+      const files = attachmentFilesWhere('r.user_id = ?', target.id);
+      run('DELETE FROM users WHERE id = ?', target.id);
+      removeAttachmentFiles(files);
+      req.flash(`Removed ${target.name}.`, 'success');
+    }
     return res.redirect('/admin/users');
   }
   if (req.body.action === 'role') {

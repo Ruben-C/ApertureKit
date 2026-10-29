@@ -82,6 +82,8 @@ function toProfile(config, entry) {
   return {
     subject: entry.dn,
     email: /@/.test(email) ? email : '',
+    // From the directory the administrator connected, so it may link.
+    emailVerified: true,
     name,
     groups: groupsKey ? normaliseGroups(entry[groupsKey]) : [],
   };

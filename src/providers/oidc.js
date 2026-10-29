@@ -1,5 +1,5 @@
 import crypto from 'node:crypto';
-import { SignInError, normaliseGroups } from './common.js';
+import { SignInError, normaliseGroups, safePath } from './common.js';
 
 // OpenID Connect, authorization-code flow with PKCE, implemented on fetch and
 // node:crypto. Works with any provider that publishes
@@ -7,7 +7,7 @@ import { SignInError, normaliseGroups } from './common.js';
 
 export const PRESETS = [
   { key: 'entra', label: 'Microsoft Entra ID (Azure AD)', values: { name: 'Microsoft', issuer: 'https://login.microsoftonline.com/{tenant-id}/v2.0', groups_claim: 'groups' },
-    note: 'Register an app under Entra ID → App registrations, add a Web redirect URI (shown after saving), and create a client secret. To map groups to roles, add a "groups" claim to the token; Entra sends group object IDs, so paste those IDs as the group names below.' },
+    note: 'Register an app under Entra ID → App registrations, add a Web redirect URI (shown after saving), and create a client secret. To map groups to roles, add a "groups" claim to the token; Entra sends group object IDs, so paste those IDs as the group names below. To link people to portal accounts that already exist, add the optional claims "email" and "xms_edov" to the ID token.' },
   { key: 'okta', label: 'Okta', values: { name: 'Okta', issuer: 'https://{your-org}.okta.com', groups_claim: 'groups' },
     note: 'Create a Web application in Okta with the redirect URI shown after saving. Add a "groups" claim to the ID token under Security → API → Authorization Servers if you want group-based roles.' },
   { key: 'google', label: 'Google Workspace', values: { name: 'Google', issuer: 'https://accounts.google.com', groups_claim: '' },
@@ -23,7 +23,7 @@ export const FIELDS = [
   { key: 'client_id', label: 'Client ID', type: 'text', required: true },
   { key: 'client_secret', label: 'Client secret', type: 'secret', help: 'Leave blank for a public client using PKCE only. When editing, leave blank to keep the current secret.' },
   { key: 'scopes', label: 'Scopes', type: 'text', default: 'openid profile email', help: 'Space-separated. Add "groups" or "offline_access" if your provider needs them.' },
-  { key: 'email_claim', label: 'Email claim', type: 'text', default: 'email', help: 'Claim holding the email address. Falls back to preferred_username and upn.' },
+  { key: 'email_claim', label: 'Email claim', type: 'text', default: 'email', help: 'Claim holding the email address. Falls back to preferred_username and upn for new accounts. An existing portal account is only linked when the provider marks the address verified (email_verified, or xms_edov for Entra ID).' },
   { key: 'groups_claim', label: 'Groups claim', type: 'text', default: 'groups', help: 'Claim holding group names, for the role mapping below. Leave blank if your provider does not send one.' },
 ];
 
@@ -127,7 +127,7 @@ export async function start(req, res, provider, callbackUrl) {
   const state = b64url(crypto.randomBytes(24));
   const nonce = b64url(crypto.randomBytes(24));
   const verifier = b64url(crypto.randomBytes(48));
-  req.session.oidc = { id: provider.id, state, nonce, verifier, returnTo: req.session.returnTo || null };
+  req.session.oidc = { id: provider.id, state, nonce, verifier, returnTo: safePath(req.session.returnTo) };
   delete req.session.returnTo;
 
   const url = new URL(doc.authorization_endpoint);
@@ -181,11 +181,17 @@ export async function callback(req, provider, callbackUrl) {
     if (extra.sub && extra.sub !== claims.sub) extra = {};
   }
   const c = { ...extra, ...claims };
-  const email = c[emailClaim] || c.email || c.preferred_username || c.upn || '';
+  // preferred_username and upn are only a fallback for naming new accounts;
+  // neither is a confirmed address, so they never link to an existing one.
+  const claimed = c[emailClaim] || c.email || '';
+  const email = claimed || c.preferred_username || c.upn || '';
+  // email_verified is the standard claim; Entra ID sends xms_edov instead
+  // (as an optional claim) when the address is on a verified domain.
+  const emailVerified = !!claimed && [c.email_verified, c.xms_edov].some((v) => v === true || v === 'true' || v === 1 || v === '1');
   const name = c.name || [c.given_name, c.family_name].filter(Boolean).join(' ') || c.preferred_username || '';
   const groups = config.groups_claim ? normaliseGroups(c[config.groups_claim]) : [];
   return {
-    profile: { subject: claims.sub, email: /@/.test(email) ? email : '', name, groups },
-    returnTo: pending.returnTo,
+    profile: { subject: claims.sub, email: /@/.test(email) ? email : '', emailVerified, name, groups },
+    returnTo: safePath(pending.returnTo),
   };
 }

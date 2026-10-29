@@ -103,9 +103,9 @@ export function validateSubmission(fields, body, files = {}) {
         if (f.required && !value) errors[f.id] = 'Choose yes or no.';
         break;
       case 'number': {
-        const s = String(raw ?? '').trim();
+        const s = String(raw ?? '').trim().slice(0, 100);
         value = s;
-        if (s && Number.isNaN(Number(s))) errors[f.id] = 'Enter a number.';
+        if (s && !Number.isFinite(Number(s))) errors[f.id] = 'Enter a number.';
         else if (f.required && !s) errors[f.id] = 'This field is required.';
         break;
       }

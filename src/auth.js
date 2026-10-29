@@ -2,6 +2,7 @@ import crypto from 'node:crypto';
 import { promisify } from 'node:util';
 import { getSettings, sessionLimits } from './settings.js';
 import { resumeSession } from './sessions.js';
+import { safePath } from './providers/common.js';
 
 export const ROLES = ['member', 'editor', 'admin'];
 const rank = (role) => ROLES.indexOf(role);
@@ -70,7 +71,7 @@ export function loadUser(req, res, next) {
 
 export function requireLogin(req, res, next) {
   if (req.user) return next();
-  req.session.returnTo = req.originalUrl;
+  req.session.returnTo = safePath(req.originalUrl);
   req.flash(req.sessionExpired ? 'Your session timed out. Sign in again to continue.' : 'Sign in to continue.');
   res.redirect('/login');
 }

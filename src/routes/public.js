@@ -6,8 +6,8 @@ import { one, all, run, transaction } from '../db.js';
 import { hashPassword, verifyPassword, needsRehash, requireLogin, csrf } from '../auth.js';
 import { validateSubmission } from '../fields.js';
 import { parseDomains, uploadLimitMb, ROLE_CHOICES } from '../settings.js';
-import { DATA_DIR } from '../config.js';
-import { enabledProviders, resolveUser, SignInError, MODULES } from '../providers/index.js';
+import { ATTACHMENTS_DIR, removeAttachmentFiles } from '../uploads.js';
+import { enabledProviders, resolveUser, safePath, SignInError, MODULES } from '../providers/index.js';
 import { notify } from '../webhook.js';
 import { startSession, endSession, endUserSessions } from '../sessions.js';
 import { beginAttempt, attemptSucceeded } from '../throttle.js';
@@ -15,14 +15,21 @@ import { beginAttempt, attemptSucceeded } from '../throttle.js';
 const router = Router();
 
 const attachmentStorage = multer.diskStorage({
-  destination: path.join(DATA_DIR, 'uploads', 'attachments'),
+  destination: ATTACHMENTS_DIR,
   filename: (req, file, cb) => cb(null, crypto.randomUUID() + path.extname(file.originalname).slice(0, 10)),
 });
 
 // The size limit is a setting, so the multer instance is built per request.
+// Files land on disk before the form is checked, so any the request does not
+// end up keeping (a failed submission, a stray field name, a question hidden
+// by a show-when rule, a bad CSRF token) are removed once the response is done.
 function attachmentUpload(req, res, next) {
   const fileSize = uploadLimitMb(res.locals.settings) * 1024 * 1024;
-  multer({ storage: attachmentStorage, limits: { fileSize, files: 20 } }).any()(req, res, next);
+  const limits = { fileSize, files: 20, fields: 1000, fieldSize: 100 * 1024, parts: 1020 };
+  multer({ storage: attachmentStorage, limits }).any()(req, res, (err) => {
+    res.on('close', () => removeAttachmentFiles((req.files || []).filter((f) => !f.kept).map((f) => f.filename)));
+    next(err);
+  });
 }
 
 // --- First run ---------------------------------------------------------------
@@ -35,15 +42,23 @@ router.post('/setup', async (req, res) => {
   const { name, email, password } = req.body;
   const error = validateAccount({ name, email, password });
   if (error) return res.status(400).render('setup', { title: 'Set up your portal', values: req.body, error });
-  const result = run(
-    'INSERT INTO users (email, name, password_hash, role) VALUES (?, ?, ?, ?)',
-    email.trim(),
-    name.trim(),
-    await hashPassword(password),
-    'admin',
-  );
-  seedExamples();
-  startSession(req, Number(result.lastInsertRowid));
+  const hash = await hashPassword(password);
+  // Checked again here, after the await and in the same transaction as the
+  // insert, so setup can never add a second administrator.
+  const id = transaction(() => {
+    if (one('SELECT 1 FROM users LIMIT 1')) return null;
+    const result = run(
+      'INSERT INTO users (email, name, password_hash, role) VALUES (?, ?, ?, ?)',
+      email.trim(),
+      name.trim(),
+      hash,
+      'admin',
+    );
+    seedExamples();
+    return Number(result.lastInsertRowid);
+  });
+  if (!id) return res.redirect('/');
+  startSession(req, id);
   req.flash('Your portal is ready. Change its name and banner under Settings.', 'success');
   res.redirect('/admin/settings');
 });
@@ -109,7 +124,7 @@ router.post('/login', async (req, res, next) => {
     return fail(signIn.ldap ? 'That username and password do not match.' : 'That email and password do not match.');
   }
   attemptSucceeded(req.ip, username, startedAt);
-  const dest = req.session.returnTo || '/';
+  const dest = safePath(req.session.returnTo) || '/';
   startSession(req, user.id);
   res.redirect(dest);
 });
@@ -196,6 +211,7 @@ router.post('/f/:slug', requireLogin, attachmentUpload, csrf, (req, res) => {
     return res.status(400).render('form', { title: form.title, form, values: req.body, errors });
   }
 
+  const kept = [];
   const id = transaction(() => {
     const r = run(
       'INSERT INTO requests (form_id, user_id, answers, form_snapshot) VALUES (?, ?, ?, ?)',
@@ -218,9 +234,11 @@ router.post('/f/:slug', requireLogin, attachmentUpload, csrf, (req, res) => {
         file.mimetype,
         file.size,
       );
+      kept.push(file);
     }
     return requestId;
   });
+  for (const file of kept) file.kept = true;
   notify(req, 'request.submitted', id);
   res.redirect(`/requests/${id}?submitted=1`);
 });

@@ -12,5 +12,5 @@ runcmd:
   - systemctl enable --now docker
   - usermod -aG docker __ADMIN_USER__
   - git clone --branch __BRANCH__ __REPO__ /opt/aperturekit
-  - printf 'COMPOSE_PROFILES=https\nDOMAIN=%s\nTRUST_PROXY=1\n' '__DOMAIN__' > /opt/aperturekit/.env
+  - printf 'COMPOSE_PROFILES=https\nDOMAIN=%s\nTRUST_PROXY=1\nBIND_ADDRESS=127.0.0.1\n' '__DOMAIN__' > /opt/aperturekit/.env
   - cd /opt/aperturekit && docker compose up -d --build
