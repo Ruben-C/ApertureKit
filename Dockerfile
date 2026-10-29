@@ -1,8 +1,8 @@
 # Build from a checkout of the repo:  docker compose up -d --build
 # (or: docker build -t aperturekit . && docker run ... — see README)
 #
-# node:sqlite needs Node 22.13+; the 22 line is LTS and well past that.
-FROM node:22-alpine
+# Needs Node 24.7+ (built-in node:sqlite and crypto.argon2); 24 is the LTS line.
+FROM node:24-alpine
 
 WORKDIR /app
 

@@ -54,7 +54,7 @@ and make sure it is writable by uid 1000: `chown -R 1000:1000 /srv/aperturekit`.
 
 ### Running without Docker
 
-Requires Node.js 22.13 or newer (it uses the built-in `node:sqlite`).
+Requires Node.js 24.7 or newer (it uses the built-in `node:sqlite` and Argon2).
 
 ```sh
 npm install
@@ -145,6 +145,14 @@ passwords back on by itself if the last provider is removed or switched off.
 
 Details worth knowing:
 
+- Portal passwords are hashed with Argon2id (64 MiB, 3 passes, 4 lanes).
+  Hashes from versions before 0.6 (scrypt) are upgraded at the next sign-in.
+- The sign-in form refuses further tries for a while after 5 wrong passwords
+  for one account from one address, 25 for one account from anywhere, or 50
+  from one address across all accounts, each within 15 minutes. This covers
+  LDAP sign-ins on the same form too. The counts are kept in memory, so a
+  restart clears them. Behind a reverse proxy, `TRUST_PROXY=1` is needed for
+  the portal to see each person's real address.
 - OpenID Connect uses the authorization-code flow with PKCE and verifies
   ID tokens against the provider's JWKS (RS/PS/ES/EdDSA). Public clients
   without a secret work too. Groups are read from a configurable claim,
@@ -258,8 +266,9 @@ src/
   db.js            sqlite connection and migrations
   settings.js      branding settings and their defaults
   fields.js        question types, schema sanitising, submission validation
-  auth.js          password hashing, roles, CSRF
+  auth.js          password hashing (Argon2id), roles, CSRF
   sessions.js      server-side sessions: timeouts, sign-out everywhere, revocation
+  throttle.js      limits repeated failed sign-ins
   webhook.js       outgoing JSON events (n8n etc.) for requests, statuses, notes
   providers/       sign-in methods: OpenID Connect, SAML, LDAP, and account linking
   routes/          public, sso (OIDC/SAML callbacks), requests, editor, admin

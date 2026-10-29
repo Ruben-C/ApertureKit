@@ -228,7 +228,7 @@ const peopleLocals = (users) => ({
   sessions: sessionSummary(sessionLimits(getSettings())),
 });
 
-router.post('/users', (req, res) => {
+router.post('/users', async (req, res) => {
   const { name = '', email = '', password = '', role = 'member' } = req.body;
   // A blank password is allowed when another sign-in method exists: the
   // person then gets in through SSO or the directory, matched by email.
@@ -244,13 +244,13 @@ router.post('/users', (req, res) => {
   }
   run(
     'INSERT INTO users (email, name, password_hash, role) VALUES (?, ?, ?, ?)',
-    email.trim(), name.trim(), ssoOnly ? '' : hashPassword(password), ROLES.includes(role) ? role : 'member',
+    email.trim(), name.trim(), ssoOnly ? '' : await hashPassword(password), ROLES.includes(role) ? role : 'member',
   );
   req.flash(ssoOnly ? `Added ${name.trim()}. They can sign in through single sign-on or the directory.` : `Added ${name.trim()}.`, 'success');
   res.redirect('/admin/users');
 });
 
-router.post('/users/:id', (req, res) => {
+router.post('/users/:id', async (req, res) => {
   const target = one('SELECT * FROM users WHERE id = ?', req.params.id);
   if (!target) return res.status(404).end();
   const admins = one("SELECT COUNT(*) AS n FROM users WHERE role = 'admin'").n;
@@ -271,7 +271,7 @@ router.post('/users/:id', (req, res) => {
     const password = String(req.body.password || '');
     if (password.length < 8) req.flash('Use a password of at least 8 characters.', 'error');
     else {
-      run('UPDATE users SET password_hash = ? WHERE id = ?', hashPassword(password), target.id);
+      run('UPDATE users SET password_hash = ? WHERE id = ?', await hashPassword(password), target.id);
       // Anyone signed in with the old password is signed out (you stay signed in here).
       endUserSessions(target.id, req);
       req.flash(`Password changed for ${target.name}. They have been signed out everywhere else.`, 'success');
