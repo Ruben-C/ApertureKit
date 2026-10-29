@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { one, all, run } from '../db.js';
 import { requireRole } from '../auth.js';
 import { sanitizeFields } from '../fields.js';
+import { attachmentFilesWhere, removeAttachmentFiles } from '../uploads.js';
 
 const router = Router();
 router.use(requireRole('editor'));
@@ -39,7 +40,9 @@ router.post('/categories/:id', (req, res) => {
   const cat = one('SELECT * FROM categories WHERE id = ?', req.params.id);
   if (!cat) return res.status(404).end();
   if (req.body.action === 'delete') {
+    const files = attachmentFilesWhere('r.form_id IN (SELECT id FROM forms WHERE category_id = ?)', cat.id);
     run('DELETE FROM categories WHERE id = ?', cat.id);
+    removeAttachmentFiles(files);
     req.flash(`Deleted ${cat.name} and its forms.`, 'success');
     return res.redirect('/editor');
   }
@@ -85,7 +88,9 @@ router.post('/forms/:id', (req, res) => {
   const form = one('SELECT * FROM forms WHERE id = ?', req.params.id);
   if (!form) return res.status(404).end();
   if (req.body.action === 'delete') {
+    const files = attachmentFilesWhere('r.form_id = ?', form.id);
     run('DELETE FROM forms WHERE id = ?', form.id);
+    removeAttachmentFiles(files);
     req.flash(`Deleted ${form.title}.`, 'success');
     return res.redirect('/editor');
   }

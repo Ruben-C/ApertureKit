@@ -9,9 +9,9 @@
 #
 # Optional settings go in a `.env` file next to this one (see .env.example).
 #
-# Built-in HTTPS: set DOMAIN, TRUST_PROXY=1 and COMPOSE_PROFILES=https in
-# `.env` and the `caddy` service below starts too, fetching a Let's Encrypt
-# certificate for DOMAIN on ports 80 and 443.
+# Built-in HTTPS: set DOMAIN, TRUST_PROXY=1, BIND_ADDRESS=127.0.0.1 and
+# COMPOSE_PROFILES=https in `.env` and the `caddy` service below starts too,
+# fetching a Let's Encrypt certificate for DOMAIN on ports 80 and 443.
 
 services:
   aperturekit:
@@ -21,7 +21,10 @@ services:
     restart: unless-stopped
     init: true
     ports:
-      - "${PORT:-3000}:3000"
+      # With TRUST_PROXY=1 the portal believes X-Forwarded-For, so it must
+      # only be reachable through the proxy: set BIND_ADDRESS=127.0.0.1 (the
+      # https profile below talks to it over the Compose network regardless).
+      - "${BIND_ADDRESS:-0.0.0.0}:${PORT:-3000}:3000"
     environment:
       # Set to 1 when a reverse proxy (Caddy, nginx, Traefik) terminates TLS
       # in front of this container; also marks session cookies Secure.

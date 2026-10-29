@@ -145,6 +145,7 @@ certificate for you.
    COMPOSE_PROFILES=https
    DOMAIN=portal.example.com
    TRUST_PROXY=1
+   BIND_ADDRESS=127.0.0.1
    ```
 
 4. Run `docker compose up -d --build` as usual.
@@ -346,7 +347,11 @@ paste into the identity provider. For every method you choose:
   never demoted.
 
 Existing password accounts are linked by email the first time they sign in
-through a provider, so moving an established portal over is painless.
+through a provider, so moving an established portal over is painless. To
+keep this safe, an account is only linked when the provider vouches for the
+address: OpenID Connect providers must send `email_verified` (Entra ID:
+add the optional `email` and `xms_edov` claims), while SAML and LDAP
+addresses come from your own directory and are trusted.
 
 Once single sign-on works you can turn off password sign-in. Administrators
 can still use their portal password at `/login?password=1`, so a
@@ -434,6 +439,7 @@ as environment variables.
 |---|---|---|
 | `PORT` | `3000` | Port to listen on (with Compose: the host port to publish) |
 | `TRUST_PROXY` | `0` | Set to `1` behind a reverse proxy that terminates TLS (also marks cookies `Secure`) |
+| `BIND_ADDRESS` | `0.0.0.0` | Host interface to publish the port on (Compose only); use `127.0.0.1` with `TRUST_PROXY=1` |
 | `MAX_UPLOAD_MB` | `10` | Starting size limit for attached files; admins can change it under Settings |
 | `SESSION_SECRET` | auto-generated | Signs session cookies; generated once and saved in the data directory if unset |
 | `COMPOSE_PROFILES` | none | Set to `https` to start the built-in Caddy proxy (Compose only) |
@@ -445,7 +451,10 @@ as environment variables.
 
 **HTTPS.** Use the [built-in proxy](#https-without-a-separate-proxy), or put
 the portal behind any reverse proxy that handles HTTPS (Caddy, nginx,
-Traefik) and set `TRUST_PROXY=1`. A Caddyfile that fronts it is two lines:
+Traefik) and set `TRUST_PROXY=1`. Then make sure only the proxy can reach
+port 3000 (`BIND_ADDRESS=127.0.0.1` with Compose), because the portal
+believes the `X-Forwarded-For` header it is sent. A Caddyfile that fronts it
+is two lines:
 
 ```
 portal.example.com {
@@ -509,6 +518,7 @@ src/
   auth.js          password hashing (Argon2id), roles, CSRF
   sessions.js      server-side sessions: timeouts, sign-out everywhere, revocation
   throttle.js      limits repeated failed sign-ins
+  uploads.js       where request attachments live, and removing them
   webhook.js       outgoing JSON events (n8n etc.) for requests, statuses, notes
   providers/       sign-in methods: OpenID Connect, SAML, LDAP, and account linking
   routes/          public, sso (OIDC/SAML callbacks), requests, editor, admin

@@ -71,9 +71,11 @@ export function createApp() {
 
   // Until an admin exists, everything goes to setup.
   app.use((req, res, next) => {
+    // Routes match without regard to case, so the path check must too.
     const hasUsers = one('SELECT 1 FROM users LIMIT 1');
-    if (!hasUsers && !req.path.startsWith('/setup')) return res.redirect('/setup');
-    if (hasUsers && req.path.startsWith('/setup')) return res.redirect('/');
+    const setup = req.path.toLowerCase().startsWith('/setup');
+    if (!hasUsers && !setup) return res.redirect('/setup');
+    if (hasUsers && setup) return res.redirect('/');
     next();
   });
 

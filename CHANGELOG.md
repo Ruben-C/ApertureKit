@@ -6,6 +6,35 @@ Notable changes to ApertureKit. The format follows
 
 ## [Unreleased]
 
+### Security
+
+Upgrade from any earlier version; the first two issues affect every release
+since 0.2.0.
+
+- **Critical: the setup page could be used again to create an administrator.**
+  The check that closes `/setup` once an administrator exists was
+  case-sensitive while routes are not, so a request to `/SETUP` from anyone
+  created a new admin account. Setup now refuses whenever any account exists.
+- **High: single sign-on could take over an existing account by email.** A
+  first sign-in through OpenID Connect was linked to any portal account with
+  the same email, even when the provider had not verified the address (or
+  only sent it as `preferred_username`/`upn`). Linking now requires
+  `email_verified` (or `xms_edov` for Entra ID); SAML and LDAP addresses come
+  from your own directory and still link.
+- **Open redirect after signing in.** A link such as `https://portal//evil.example/`
+  sent people to another site once they signed in. Return addresses are now
+  limited to paths on the portal.
+- **Upload files are cleaned up.** Files from failed or rejected submissions,
+  extra file fields, and hidden questions were left on disk, as were the files
+  of deleted forms, categories, and people. They are now removed, and
+  multipart requests have field and size limits.
+- **`BIND_ADDRESS`** lets Compose publish the portal on `127.0.0.1` only. The
+  built-in HTTPS setup and the Azure deployment now use it, so nobody can
+  bypass the proxy and forge `X-Forwarded-For` to dodge sign-in limits.
+- Dependencies updated for GHSA-27r3-jxmh-p828 (body-parser), and also
+  GHSA-q7qp-rjg7-q26m (multer) and GHSA-6pq8-jhm2-2vcw (qs), which did not
+  affect the portal.
+
 ### Added
 
 - **Failed sign-ins are rate limited.** After 5 wrong passwords for one

@@ -6,7 +6,7 @@ import * as oidc from './oidc.js';
 import * as saml from './saml.js';
 import * as ldap from './ldap.js';
 
-export { SignInError, normaliseGroups } from './common.js';
+export { SignInError, normaliseGroups, safePath } from './common.js';
 
 // Each sign-in method is a row in auth_providers with a JSON config. The
 // admin form is rendered from `fields` below, so adding a setting to a
@@ -125,8 +125,8 @@ export function callbackUrl(req, provider) {
 
 // --- Provisioning ------------------------------------------------------------
 
-// A provider hands back a profile { subject, email, name, groups } after
-// verifying the person. This finds or creates the matching account, keeps
+// A provider hands back a profile { subject, email, emailVerified, name,
+// groups } after verifying the person. This finds or creates the matching account, keeps
 // its role in step with the configured groups, and returns the user row.
 export function resolveUser(provider, profile) {
   const email = String(profile.email || '').trim().toLowerCase();
@@ -142,6 +142,12 @@ export function resolveUser(provider, profile) {
     );
     if (!user && email) {
       user = one('SELECT * FROM users WHERE email = ?', email);
+      // Linking hands over the existing account, so the provider has to vouch
+      // for the address; otherwise anyone who can sign up at the provider
+      // with someone else's email would become them here.
+      if (user && profile.emailVerified !== true) {
+        throw new SignInError(`There is already an account for ${email}, but ${provider.name} did not confirm that address, so the portal cannot connect them. Ask an administrator.`);
+      }
       if (user) run('INSERT INTO identities (provider_id, user_id, subject) VALUES (?, ?, ?)', provider.id, user.id, subject);
     }
     if (!user) {

@@ -180,7 +180,7 @@ test('first SSO sign-in creates an account; second one reuses it', async () => {
 });
 
 test('an existing password account is linked by email', async () => {
-  idp.next = { sub: 'u-ada', email: 'ADA@example.com', name: 'Ada' };
+  idp.next = { sub: 'u-ada', email: 'ADA@example.com', email_verified: true, name: 'Ada' };
   const c = client();
   const landed = await c.follow(`/auth/${providerId}/start`);
   assert.equal(landed.status, 200);
@@ -189,6 +189,18 @@ test('an existing password account is linked by email', async () => {
   const people = await (await c.get('/admin/users')).text();
   assert.match(people, /Signs in with/);
   assert.match(people, /Acme SSO/);
+});
+
+test('an unconfirmed email never takes over an existing account', async () => {
+  // Someone signs up at the provider with Ada's address but no verification...
+  idp.next = { sub: 'u-impostor', email: 'ada@example.com', name: 'Not Ada' };
+  const landed = await client().follow(`/auth/${providerId}/start`);
+  assert.match(await landed.text(), /did not confirm that address/);
+  // ...or the address only arrives as preferred_username, which is never proof.
+  idp.next = { sub: 'u-impostor', preferred_username: 'ada@example.com', email_verified: true, name: 'Not Ada' };
+  await client().follow(`/auth/${providerId}/start`);
+  assert.equal(one('SELECT 1 FROM identities WHERE subject = ?', 'u-impostor'), undefined);
+  assert.equal(one('SELECT COUNT(*) AS n FROM users WHERE email = ?', 'ada@example.com').n, 1);
 });
 
 test('groups map to roles when configured; last admin is protected', async () => {
@@ -228,7 +240,7 @@ test('admin can pre-create an account with no password once SSO exists', async (
   // Cannot sign in with an empty password...
   assert.equal((await client().post('/login', { email: 'pre@example.com', password: '' })).status, 401);
   // ...but SSO links straight onto the prepared account and keeps its role.
-  idp.next = { sub: 'u-pre', email: 'pre@example.com', name: 'Pre Made' };
+  idp.next = { sub: 'u-pre', email: 'pre@example.com', xms_edov: true, name: 'Pre Made' };
   await client().follow(`/auth/${providerId}/start`);
   assert.equal(one('SELECT role FROM users WHERE email = ?', 'pre@example.com').role, 'editor');
   assert.ok(one('SELECT 1 FROM identities WHERE subject = ?', 'u-pre'));

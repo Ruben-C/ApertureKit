@@ -1,6 +1,13 @@
 // Shared by every provider module; deliberately imports nothing so the
 // modules can be loaded in any order.
 
+// Only ever send people to a path on this site. Browsers treat a leading
+// "//" or "/\" as another host, and ignore tabs and newlines inside URLs.
+export function safePath(p) {
+  const s = String(p || '');
+  return /^\/(?![/\\])/.test(s) && !/[\\\x00-\x1f]/.test(s) ? s : null;
+}
+
 // A sign-in that failed for a reason worth telling the person (as opposed
 // to a bug), shown on the sign-in page.
 export class SignInError extends Error {}

@@ -3,7 +3,7 @@ import path from 'node:path';
 import { one, all, run } from '../db.js';
 import { requireLogin, requireRole } from '../auth.js';
 import { STATUS } from '../status.js';
-import { DATA_DIR } from '../config.js';
+import { ATTACHMENTS_DIR } from '../uploads.js';
 import { notify, isSignedFileLink, verifyAttachmentToken } from '../webhook.js';
 
 const router = Router();
@@ -95,7 +95,7 @@ router.get('/requests/:id/files/:attachmentId', (req, res, next) => {
 function sendAttachment(req, res, requestId) {
   const file = one('SELECT * FROM attachments WHERE id = ? AND request_id = ?', req.params.attachmentId, requestId);
   if (!file) return res.status(404).render('error', { title: 'File not found', message: 'This attachment no longer exists.' });
-  res.download(path.join(DATA_DIR, 'uploads', 'attachments', file.stored_name), file.original_name);
+  res.download(path.join(ATTACHMENTS_DIR, file.stored_name), file.original_name);
 }
 
 // The "who can add notes" setting: everyone involved, editors only, or nobody.

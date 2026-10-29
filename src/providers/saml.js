@@ -1,5 +1,5 @@
 import { SAML } from '@node-saml/node-saml';
-import { SignInError, normaliseGroups } from './common.js';
+import { SignInError, normaliseGroups, safePath } from './common.js';
 
 // SAML 2.0, SP-initiated (and IdP-initiated) sign-in via @node-saml/node-saml.
 // The portal is the service provider; the admin pastes the IdP's sign-on
@@ -112,13 +112,9 @@ export async function callback(req, provider, base) {
   const name = String(attr(config.name_attribute, 'displayName', 'cn', 'name', 'http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name') || [first, last].filter(Boolean).join(' '));
   const groups = config.groups_attribute ? normaliseGroups(p[config.groups_attribute]) : [];
   return {
-    profile: { subject: nameID || email, email: /@/.test(email) ? email : '', name, groups },
+    // The address comes from the organisation's identity provider, which the
+    // administrator chose to trust, so it may link to an existing account.
+    profile: { subject: nameID || email, email: /@/.test(email) ? email : '', emailVerified: true, name, groups },
     returnTo: safePath(req.body.RelayState),
   };
-}
-
-// Only ever send people to a path on this site.
-export function safePath(p) {
-  const s = String(p || '');
-  return /^\/(?!\/)/.test(s) ? s : null;
 }
