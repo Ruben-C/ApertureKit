@@ -6,6 +6,8 @@ Notable changes to ApertureKit. The format follows
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-10-29
+
 ### Security
 
 Upgrade from any earlier version; the first two issues affect every release
@@ -63,6 +65,8 @@ since 0.2.0.
 - **Requires Node.js 24.7 or newer** for the built-in Argon2. The Docker image
   now uses `node:24-alpine`; rebuild it as usual with
   `docker compose up -d --build`.
+- **README rewritten** with screenshots, an installation overview with a
+  guide for each method, and a security section.
 
 ## [0.5.0] - 2026-10-22
 
