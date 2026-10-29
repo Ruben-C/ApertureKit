@@ -3,13 +3,14 @@ import multer from 'multer';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { one, all, run, transaction } from '../db.js';
-import { hashPassword, verifyPassword, requireLogin, csrf } from '../auth.js';
+import { hashPassword, verifyPassword, needsRehash, requireLogin, csrf } from '../auth.js';
 import { validateSubmission } from '../fields.js';
 import { parseDomains, uploadLimitMb, ROLE_CHOICES } from '../settings.js';
 import { DATA_DIR } from '../config.js';
 import { enabledProviders, resolveUser, SignInError, MODULES } from '../providers/index.js';
 import { notify } from '../webhook.js';
 import { startSession, endSession, endUserSessions } from '../sessions.js';
+import { beginAttempt, attemptSucceeded } from '../throttle.js';
 
 const router = Router();
 
@@ -30,7 +31,7 @@ router.get('/setup', (req, res) => {
   res.render('setup', { title: 'Set up your portal', values: {} });
 });
 
-router.post('/setup', (req, res) => {
+router.post('/setup', async (req, res) => {
   const { name, email, password } = req.body;
   const error = validateAccount({ name, email, password });
   if (error) return res.status(400).render('setup', { title: 'Set up your portal', values: req.body, error });
@@ -38,7 +39,7 @@ router.post('/setup', (req, res) => {
     'INSERT INTO users (email, name, password_hash, role) VALUES (?, ?, ?, ?)',
     email.trim(),
     name.trim(),
-    hashPassword(password),
+    await hashPassword(password),
     'admin',
   );
   seedExamples();
@@ -66,9 +67,22 @@ router.post('/login', async (req, res, next) => {
   const { signIn } = res.locals;
   const fail = (error, status = 401) => res.status(status).render('login', { title: 'Sign in', values: { email }, error, showPassword: true });
 
+  // Checked before any password work, so a blocked guess costs nothing.
+  const startedAt = Date.now();
+  const wait = beginAttempt(req.ip, username, startedAt);
+  if (wait) {
+    const minutes = Math.ceil(wait / 60_000);
+    res.set('Retry-After', String(Math.ceil(wait / 1000)));
+    return fail(`Too many sign-in attempts. Try again in ${minutes} minute${minutes === 1 ? '' : 's'}.`, 429);
+  }
+
   // Portal passwords. When switched off, administrators can still use theirs.
   const local = one('SELECT * FROM users WHERE email = ?', username);
-  let user = local && verifyPassword(password, local.password_hash) && (signIn.password || local.role === 'admin') ? local : null;
+  const matched = await verifyPassword(password, local?.password_hash);
+  let user = local && matched && (signIn.password || local.role === 'admin') ? local : null;
+  if (user && needsRehash(local.password_hash)) {
+    run('UPDATE users SET password_hash = ? WHERE id = ?', await hashPassword(password), local.id);
+  }
 
   // Then each directory, in order, until one recognises the person.
   if (!user && signIn.ldap && username && password) {
@@ -94,6 +108,7 @@ router.post('/login', async (req, res, next) => {
   if (!user) {
     return fail(signIn.ldap ? 'That username and password do not match.' : 'That email and password do not match.');
   }
+  attemptSucceeded(req.ip, username, startedAt);
   const dest = req.session.returnTo || '/';
   startSession(req, user.id);
   res.redirect(dest);
@@ -107,7 +122,7 @@ router.get('/register', (req, res) => {
   res.render('register', { title: 'Create an account', values: {} });
 });
 
-router.post('/register', (req, res) => {
+router.post('/register', async (req, res) => {
   const settings = res.locals.settings;
   if (!res.locals.signIn.password || settings.allow_registration !== '1') return res.status(403).end();
   const { name, email, password } = req.body;
@@ -122,7 +137,7 @@ router.post('/register', (req, res) => {
     'INSERT INTO users (email, name, password_hash, role) VALUES (?, ?, ?, ?)',
     email.trim(),
     name.trim(),
-    hashPassword(password),
+    await hashPassword(password),
     ROLE_CHOICES.includes(settings.default_role) ? settings.default_role : 'member',
   );
   startSession(req, Number(result.lastInsertRowid));

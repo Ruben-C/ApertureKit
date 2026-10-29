@@ -11,6 +11,8 @@ const { createApp } = await import('../src/app.js');
 const { resolveUser, normaliseGroups, buildConfig } = await import('../src/providers/index.js');
 const { verifyIdToken } = await import('../src/providers/oidc.js');
 const { one, run } = await import('../src/db.js');
+const { hashPassword, verifyPassword, needsRehash } = await import('../src/auth.js');
+const { beginAttempt, attemptSucceeded, resetThrottle } = await import('../src/throttle.js');
 
 // --- A tiny OpenID provider ---------------------------------------------------
 // Serves discovery, JWKS, an authorize endpoint that bounces straight back
@@ -132,6 +134,7 @@ test('setup, then admin adds an OpenID Connect provider', async () => {
 
   const page = await (await c.get('/admin/auth')).text();
   assert.match(page, /Only portal passwords so far/);
+  assert.match(one('SELECT password_hash FROM users WHERE email = ?', 'ada@example.com').password_hash, /^\$argon2id\$/);
   assert.match(page, /OpenID Connect/);
   assert.match(page, /SAML 2\.0/);
   assert.match(page, /LDAP \/ Active Directory/);
@@ -395,4 +398,79 @@ test('unit: group normalisation and role resolution', () => {
 
   const fake = { id: 999, config: { auto_create: '0' } };
   assert.throws(() => resolveUser(fake, { subject: 's', email: 'ghost@example.com' }), /no account/);
+});
+
+test('unit: portal passwords are hashed with Argon2id', async () => {
+  const stored = await hashPassword('correct horse');
+  assert.match(stored, /^\$argon2id\$v=19\$m=65536,t=3,p=4\$[A-Za-z0-9+/]{22}\$[A-Za-z0-9+/]{43}$/);
+  assert.notEqual(stored, await hashPassword('correct horse'), 'salted');
+  assert.equal(await verifyPassword('correct horse', stored), true);
+  assert.equal(await verifyPassword('wrong horse', stored), false);
+  assert.equal(needsRehash(stored), false);
+  assert.equal(needsRehash(stored.replace('m=65536', 'm=19456')), true, 'weaker settings get upgraded');
+  for (const bad of ['', null, undefined, 'garbage', '$argon2i$v=19$m=65536,t=3,p=4$AAAA$AAAA']) {
+    assert.equal(await verifyPassword('anything', bad), false);
+  }
+});
+
+test('an older scrypt password still works and is upgraded to Argon2id at sign-in', async () => {
+  const salt = crypto.randomBytes(16).toString('hex');
+  const legacy = `scrypt$${salt}$${crypto.scryptSync('old-password', salt, 64).toString('hex')}`;
+  run('INSERT INTO users (email, name, password_hash, role) VALUES (?, ?, ?, ?)', 'legacy@example.com', 'Lee Gacy', legacy, 'member');
+  assert.equal(await verifyPassword('old-password', legacy), true);
+  assert.equal(needsRehash(legacy), true);
+
+  assert.equal((await client().post('/login', { email: 'legacy@example.com', password: 'wrong' })).status, 401);
+  assert.equal(one('SELECT password_hash FROM users WHERE email = ?', 'legacy@example.com').password_hash, legacy, 'untouched on failure');
+
+  assert.equal((await client().post('/login', { email: 'legacy@example.com', password: 'old-password' })).status, 302);
+  const upgraded = one('SELECT password_hash FROM users WHERE email = ?', 'legacy@example.com').password_hash;
+  assert.match(upgraded, /^\$argon2id\$/);
+  assert.equal((await client().post('/login', { email: 'legacy@example.com', password: 'old-password' })).status, 302, 'still signs in');
+  run('DELETE FROM users WHERE email = ?', 'legacy@example.com');
+});
+
+test('unit: sign-in throttle limits by address+account, account, and address', () => {
+  resetThrottle();
+  const t = 1_000_000;
+  // Five tries at one account from one address, then a wait until the first ages out.
+  for (let i = 0; i < 5; i++) assert.equal(beginAttempt('1.1.1.1', 'Ada@example.com', t + i), 0);
+  assert.equal(beginAttempt('1.1.1.1', 'ada@example.com', t + 10), 15 * 60_000 - 10, 'case-insensitive');
+  assert.equal(beginAttempt('1.1.1.1', 'ada@example.com', t + 15 * 60_000), 0, 'window slides');
+  assert.equal(beginAttempt('2.2.2.2', 'ada@example.com', t + 10), 0, 'owner elsewhere is not locked out');
+  assert.equal(beginAttempt('1.1.1.1', 'bob@example.com', t + 10), 0, 'other accounts unaffected');
+
+  // Spread over many addresses, one account still stops at 25.
+  resetThrottle();
+  for (let i = 0; i < 25; i++) assert.equal(beginAttempt(`10.0.0.${i}`, 'ada@example.com', t), 0);
+  assert.ok(beginAttempt('10.0.1.1', 'ada@example.com', t) > 0);
+
+  // One address across many accounts stops at 50.
+  resetThrottle();
+  for (let i = 0; i < 50; i++) assert.equal(beginAttempt('3.3.3.3', `u${i}@example.com`, t), 0);
+  assert.ok(beginAttempt('3.3.3.3', 'new@example.com', t) > 0);
+
+  // Success clears the account's counts and refunds its own attempt.
+  resetThrottle();
+  for (let i = 0; i < 4; i++) beginAttempt('4.4.4.4', 'ada@example.com', t);
+  beginAttempt('4.4.4.4', 'ada@example.com', t + 1);
+  attemptSucceeded('4.4.4.4', 'ada@example.com', t + 1);
+  assert.equal(beginAttempt('4.4.4.4', 'ada@example.com', t + 2), 0);
+  resetThrottle();
+});
+
+test('repeated wrong passwords are refused with 429, even when the next one is right', async () => {
+  resetThrottle();
+  for (let i = 0; i < 5; i++) {
+    assert.equal((await client().post('/login', { email: 'ada@example.com', password: 'nope' })).status, 401);
+  }
+  const blocked = await client().post('/login', { email: 'ada@example.com', password: 'password123' });
+  assert.equal(blocked.status, 429);
+  assert.ok(Number(blocked.headers.get('retry-after')) > 0);
+  assert.match(await blocked.text(), /Too many sign-in attempts/);
+  // An unknown account is treated the same way, so blocking reveals nothing.
+  for (let i = 0; i < 5; i++) await client().post('/login', { email: 'ghost@example.com', password: 'nope' });
+  assert.equal((await client().post('/login', { email: 'ghost@example.com', password: 'nope' })).status, 429);
+  resetThrottle();
+  assert.equal((await client().post('/login', { email: 'ada@example.com', password: 'password123' })).status, 302);
 });

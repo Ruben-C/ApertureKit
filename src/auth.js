@@ -1,22 +1,57 @@
 import crypto from 'node:crypto';
+import { promisify } from 'node:util';
 import { getSettings, sessionLimits } from './settings.js';
 import { resumeSession } from './sessions.js';
 
 export const ROLES = ['member', 'editor', 'admin'];
 const rank = (role) => ROLES.indexOf(role);
 
-export function hashPassword(password) {
-  const salt = crypto.randomBytes(16).toString('hex');
-  const hash = crypto.scryptSync(password, salt, 64).toString('hex');
-  return `scrypt$${salt}$${hash}`;
+// Portal passwords are hashed with Argon2id at the first parameter set RFC 9106
+// recommends (64 MiB, 3 passes, 4 lanes), stored as a standard PHC string:
+// $argon2id$v=19$m=65536,t=3,p=4$<salt>$<hash>. Hashes made by earlier
+// versions (scrypt) still verify and are replaced at the next sign-in.
+const ARGON2 = { memory: 65536, passes: 3, parallelism: 4, tagLength: 32 };
+const PHC = /^\$argon2id\$v=19\$m=(\d+),t=(\d+),p=(\d+)\$([A-Za-z0-9+/]+)\$([A-Za-z0-9+/]+)$/;
+const argon2 = promisify(crypto.argon2);
+const scrypt = promisify(crypto.scrypt);
+const b64 = (buf) => buf.toString('base64').replace(/=+$/, '');
+
+export async function hashPassword(password) {
+  const nonce = crypto.randomBytes(16);
+  const hash = await argon2('argon2id', { message: String(password), nonce, ...ARGON2 });
+  return `$argon2id$v=19$m=${ARGON2.memory},t=${ARGON2.passes},p=${ARGON2.parallelism}$${b64(nonce)}$${b64(hash)}`;
 }
 
-export function verifyPassword(password, stored) {
-  const [scheme, salt, hash] = String(stored).split('$');
-  if (scheme !== 'scrypt' || !salt || !hash) return false;
-  const candidate = crypto.scryptSync(password, salt, 64);
-  const expected = Buffer.from(hash, 'hex');
-  return candidate.length === expected.length && crypto.timingSafeEqual(candidate, expected);
+// Always does one full hash, even for an unknown email or an account with no
+// password, so response times do not reveal which accounts exist.
+export async function verifyPassword(password, stored) {
+  stored = String(stored ?? '');
+  const message = String(password ?? '');
+  const phc = PHC.exec(stored);
+  if (phc) {
+    const [, memory, passes, parallelism, nonce, hash] = phc;
+    const expected = Buffer.from(hash, 'base64');
+    const candidate = await argon2('argon2id', {
+      message, nonce: Buffer.from(nonce, 'base64'), tagLength: expected.length,
+      memory: Number(memory), passes: Number(passes), parallelism: Number(parallelism),
+    });
+    return crypto.timingSafeEqual(candidate, expected);
+  }
+  const [scheme, salt, hash] = stored.split('$');
+  if (scheme === 'scrypt' && salt && hash) {
+    const expected = Buffer.from(hash, 'hex');
+    const candidate = await scrypt(message, salt, 64);
+    return candidate.length === expected.length && crypto.timingSafeEqual(candidate, expected);
+  }
+  await hashPassword(message);
+  return false;
+}
+
+// True when a stored hash is from an older scheme or weaker settings than the
+// current ones, so it should be replaced after a successful sign-in.
+export function needsRehash(stored) {
+  const phc = PHC.exec(String(stored ?? ''));
+  return !phc || Number(phc[1]) < ARGON2.memory || Number(phc[2]) < ARGON2.passes || Number(phc[3]) < ARGON2.parallelism;
 }
 
 // Loads the signed-in user (if any) onto req.user and the templates. An

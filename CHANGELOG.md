@@ -4,6 +4,31 @@ Notable changes to ApertureKit. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow
 [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+
+- **Failed sign-ins are rate limited.** After 5 wrong passwords for one
+  account from one address within 15 minutes, that address has to wait before
+  trying that account again. Wider limits catch guessing at one account from
+  many addresses (25) and one address trying many accounts (50). Someone
+  elsewhere cannot lock the real owner out with the tight limit, and unknown
+  accounts are limited the same way, so a refusal says nothing about who has
+  an account. Applies to portal passwords and LDAP alike.
+
+### Changed
+
+- **Portal passwords are hashed with Argon2id** (64 MiB, 3 passes, 4 lanes,
+  the settings RFC 9106 recommends) instead of scrypt. Existing passwords keep
+  working and are upgraded the next time each person signs in; nobody has to
+  reset anything.
+- A failed sign-in now takes the same time whether or not the account exists
+  or has a password, so the sign-in form no longer hints at which emails are
+  registered.
+- **Requires Node.js 24.7 or newer** for the built-in Argon2. The Docker image
+  now uses `node:24-alpine`; rebuild it as usual with
+  `docker compose up -d --build`.
+
 ## [0.5.0] - 2026-10-22
 
 ### Added
