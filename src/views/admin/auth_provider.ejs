@@ -2,13 +2,13 @@
 <div class="with-subnav">
 <%- include('../partials/admin_nav') %>
 <div>
-<nav class="crumbs" aria-label="Breadcrumb"><a href="/admin/auth">Sign-in methods</a><%- include('../partials/icon', { name: 'chevron-right' }) %><span><%= provider ? provider.name : `New ${typeInfo.label}` %></span></nav>
+<nav class="crumbs" aria-label="Breadcrumb"><a href="/admin/auth"><%= t('admin.auth.title') %></a><%- include('../partials/icon', { name: 'chevron-right' }) %><span><%= provider ? provider.name : (locale === 'pt-BR' ? `Novo ${typeInfo.label}` : `New ${typeInfo.label}`) %></span></nav>
 <div class="page-head">
   <div>
-    <h1><%= provider ? provider.name : `Add ${typeInfo.label}` %></h1>
-    <p class="lede"><%= typeInfo.label %><% if (provider) { %> · <% if (provider.enabled) { %><span class="tag tag-live"><span class="dot"></span>On</span><% } else { %><span class="tag"><span class="dot"></span>Off</span><% } %><% } %></p>
+    <h1><%= provider ? provider.name : (locale === 'pt-BR' ? `Adicionar ${typeInfo.label}` : `Add ${typeInfo.label}`) %></h1>
+    <p class="lede"><%= typeInfo.label %><% if (provider) { %> · <% if (provider.enabled) { %><span class="tag tag-live"><span class="dot"></span><%= t('common.on') %></span><% } else { %><span class="tag"><span class="dot"></span><%= t('common.off') %></span><% } %><% } %></p>
   </div>
-  <% if (provider) { %><div class="page-actions"><a class="btn" href="/login?password=1"><%- include('../partials/icon', { name: 'external' }) %>Open sign-in page</a></div><% } %>
+  <% if (provider) { %><div class="page-actions"><a class="btn" href="/login?password=1"><%- include('../partials/icon', { name: 'external' }) %><%= t('admin.auth_provider.open_sign_in_page') %></a></div><% } %>
 </div>
 
 <% if (locals.error) { %><p class="field-error" role="alert"><%- include('../partials/icon', { name: 'alert' }) %><span><%= error %></span></p><% } %>
@@ -18,7 +18,7 @@
   <% if (locals.preset && preset.note) { %>
     <section class="settings-group card">
       <header class="card-head">
-        <h2><%- include('../partials/icon', { name: 'info' }) %>Setting up <%= preset.label %></h2>
+        <h2><%- include('../partials/icon', { name: 'info' }) %><%= t('admin.auth_provider.setting_up', { label: preset.label }) %></h2>
       </header>
       <div class="card-body"><p style="margin:0"><%= preset.note %></p></div>
     </section>
@@ -27,31 +27,31 @@
   <% if (provider && type !== 'ldap') { %>
     <section class="settings-group card">
       <header class="card-head">
-        <h2><%- include('../partials/icon', { name: 'link' }) %>Give these to your identity provider</h2>
-        <p>If the address looks wrong, set the portal address under <a href="/admin/auth">Sign-in methods → Options</a>.</p>
+        <h2><%- include('../partials/icon', { name: 'link' }) %><%= t('admin.auth_provider.give_to_idp') %></h2>
+        <p><%- t('admin.auth_provider.give_to_idp_hint') %></p>
       </header>
       <div class="card-body">
       <% if (type === 'oidc') { %>
         <dl class="kv">
-          <dt>Redirect URI</dt><dd><code><%= base %>/auth/<%= provider.id %>/callback</code></dd>
-          <dt>Grant</dt><dd>Authorization code with PKCE (S256), client secret sent as HTTP Basic</dd>
+          <dt><%= t('admin.auth_provider.redirect_uri') %></dt><dd><code><%= base %>/auth/<%= provider.id %>/callback</code></dd>
+          <dt><%= t('admin.auth_provider.grant') %></dt><dd><%= t('admin.auth_provider.grant_desc') %></dd>
         </dl>
       <% } else { %>
         <dl class="kv">
-          <dt>Metadata URL</dt><dd><code><%= base %>/auth/<%= provider.id %>/metadata</code></dd>
-          <dt>Entity ID / Audience</dt><dd><code><%= provider.config.sp_entity_id || `${base}/auth/${provider.id}/metadata` %></code></dd>
-          <dt>ACS / Reply URL</dt><dd><code><%= base %>/auth/<%= provider.id %>/callback</code> (HTTP-POST binding)</dd>
+          <dt><%= t('admin.auth_provider.metadata_url') %></dt><dd><code><%= base %>/auth/<%= provider.id %>/metadata</code></dd>
+          <dt><%= t('admin.auth_provider.entity_id') %></dt><dd><code><%= provider.config.sp_entity_id || `${base}/auth/${provider.id}/metadata` %></code></dd>
+          <dt><%= t('admin.auth_provider.acs_url') %></dt><dd><code><%= base %>/auth/<%= provider.id %>/callback</code> (HTTP-POST binding)</dd>
         </dl>
-        <p class="muted" style="margin:.75rem 0 0">Requests are not signed and assertions must not be encrypted.</p>
+        <p class="muted" style="margin:.75rem 0 0"><%= t('admin.auth_provider.requests_unsigned_notice') %></p>
       <% } %>
       </div>
     </section>
   <% } %>
 
-  <form method="post" action="<%= provider ? `/admin/auth/${provider.id}` : `/admin/auth/new/${type}` %>" class="settings-group card" autocomplete="off">
+  <form method="post" action="<%= provider ? `/admin/auth/${provider.id}` : `/admin/auth/new/${type}` %>" class="settings-group card" data-dirty-watch>
     <input type="hidden" name="_csrf" value="<%= csrf %>">
     <header class="card-head">
-      <h2><%- include('../partials/icon', { name: 'sliders' }) %><%= provider ? 'Settings' : 'Details' %></h2>
+      <h2><%- include('../partials/icon', { name: 'sliders' }) %><%= provider ? (locale === 'pt-BR' ? 'Configurações' : 'Settings') : (locale === 'pt-BR' ? 'Detalhes' : 'Details') %></h2>
     </header>
     <div class="card-body">
     <% for (const f of typeInfo.fields) { const v = values[f.key] ?? ''; %>
@@ -69,7 +69,7 @@
         </label>
       <% } else if (f.type === 'secret') { %>
         <label class="field"><span><%= f.label %></span>
-          <input type="password" name="<%= f.key %>" value="" autocomplete="new-password" placeholder="<%= provider && provider.config[f.key] ? '•••••••• (saved)' : '' %>">
+          <input type="password" name="<%= f.key %>" value="" autocomplete="new-password" placeholder="<%= provider && provider.config[f.key] ? (locale === 'pt-BR' ? '•••••••• (salvo)' : '•••••••• (saved)') : '' %>">
           <% if (f.help) { %><small><%= f.help %></small><% } %>
         </label>
       <% } else { %>
@@ -82,36 +82,36 @@
 
     <% if (provider) { %>
       <input type="hidden" name="enabled" value="0">
-      <label class="choice-field"><input type="checkbox" name="enabled" value="1" <%= provider.enabled ? 'checked' : '' %>><span>Switched on</span><small>Shown on the sign-in page. Switch off to keep the settings without offering it.</small></label>
+      <label class="choice-field"><input type="checkbox" name="enabled" value="1" <%= provider.enabled ? 'checked' : '' %>><span><%= locale === 'pt-BR' ? 'Ativado' : 'Switched on' %></span><small><%= locale === 'pt-BR' ? 'Exibido na tela de login. Desative para manter as configurações sem oferecê-lo aos usuários.' : 'Shown on the sign-in page. Switch off to keep the settings without offering it.' %></small></label>
     <% } %>
 
     <% if (type === 'ldap' && provider) { %>
       <header class="form-section">
-        <h2>Test the connection</h2>
-        <p class="muted">Saves nothing. Uses the values above to connect, bind, and look up a person; add their password to check it too.</p>
+        <h2><%= t('admin.auth_provider.test_ldap_title') %></h2>
+        <p class="muted"><%= t('admin.auth_provider.test_ldap_blurb') %></p>
       </header>
       <div class="form-row">
-        <label class="field"><span>Username to look up</span><input name="test_username" value="<%= values.test_username || '' %>" autocomplete="off"></label>
-        <label class="field"><span>Their password (optional)</span><input type="password" name="test_password" autocomplete="new-password"></label>
+        <label class="field"><span><%= locale === 'pt-BR' ? 'Usuário para consulta' : 'Username to look up' %></span><input name="test_username" value="<%= values.test_username || '' %>" autocomplete="off"></label>
+        <label class="field"><span><%= locale === 'pt-BR' ? 'Senha do usuário (opcional)' : 'Their password (optional)' %></span><input type="password" name="test_password" autocomplete="new-password"></label>
       </div>
     <% } %>
     </div>
     <div class="card-foot">
-      <button class="btn btn-primary" type="submit"><%= provider ? 'Save' : 'Add method' %></button>
-      <% if (type === 'ldap' && provider) { %><button class="btn" type="submit" name="action" value="test"><%- include('../partials/icon', { name: 'zap' }) %>Test connection</button><% } %>
-      <a class="btn btn-ghost" href="/admin/auth">Cancel</a>
+      <button class="btn btn-primary" type="submit"><%= provider ? t('common.save') : (locale === 'pt-BR' ? 'Adicionar método' : 'Add method') %></button>
+      <% if (type === 'ldap' && provider) { %><button class="btn" type="submit" name="action" value="test"><%- include('../partials/icon', { name: 'zap' }) %><%= t('admin.auth_provider.test_button') %></button><% } %>
+      <a class="btn btn-ghost" href="/admin/auth"><%= t('common.cancel') %></a>
     </div>
   </form>
 
   <% if (provider) { %>
     <section class="settings-group card danger-zone">
       <header class="card-head">
-        <h2><%- include('../partials/icon', { name: 'alert' }) %>Remove this method</h2>
+        <h2><%- include('../partials/icon', { name: 'alert' }) %><%= t('admin.auth_provider.delete_provider') %></h2>
       </header>
       <form method="post" action="/admin/auth/<%= provider.id %>" class="card-body">
         <input type="hidden" name="_csrf" value="<%= csrf %>">
-        <p>People who signed in this way keep their accounts but will need another way in.</p>
-        <button class="btn btn-danger" type="submit" name="action" value="delete" onclick="return confirm('Remove <%= provider.name %>? People who signed in this way keep their accounts but will need another way in.')"><%- include('../partials/icon', { name: 'trash' }) %>Remove <%= provider.name %></button>
+        <p><%= locale === 'pt-BR' ? 'Pessoas que entraram por este método mantêm suas contas, mas precisarão de outra forma de acesso.' : 'People who signed in this way keep their accounts but will need another way in.' %></p>
+        <button class="btn btn-danger" type="submit" name="action" value="delete" onclick="return confirm('<%= t('admin.auth_provider.confirm_delete_provider') %>')"><%- include('../partials/icon', { name: 'trash' }) %><%= locale === 'pt-BR' ? `Remover ${provider.name}` : `Remove ${provider.name}` %></button>
       </form>
     </section>
   <% } %>

@@ -7,8 +7,8 @@
       <form class="hero-search" role="search" data-no-busy>
         <label class="search">
           <%- include('partials/icon', { name: 'search' }) %>
-          <span class="visually-hidden">Find a form</span>
-          <input type="search" data-filter="directory" placeholder="What do you need? Try “laptop” or “leave”" autocomplete="off">
+          <span class="visually-hidden"><%= t('home.find_form') %></span>
+          <input type="search" data-filter="directory" placeholder="<%= t('home.search_placeholder') %>" autocomplete="off">
         </label>
       </form>
     <% } %>
@@ -18,26 +18,26 @@
 <% if (settings.welcome_text) { %><p class="lede welcome"><%= settings.welcome_text %></p><% } %>
 
 <% if (you && you.total) { %>
-  <section class="card home-you" aria-label="Your requests">
+  <section class="card home-you" aria-label="<%= t('nav.my_requests') %>">
     <div class="home-you-recent">
-      <span class="muted nowrap"><strong class="num" style="color:var(--ink)"><%= you.open %></strong> open request<%= you.open === 1 ? '' : 's' %> of <span class="num"><%= you.total %></span></span>
+      <span class="muted nowrap"><%- t('home.open_requests_summary', { open: you.open, openPlural: you.open === 1 ? '' : 's', total: you.total }) %></span>
       <% for (const r of you.recent) { %>
         <a href="/requests/<%= r.id %>"><span class="status status-<%= r.status %> status-dot" title="<%= STATUS[r.status] %>"><span class="visually-hidden"><%= STATUS[r.status] %></span></span><span class="ticket-no"><%= ticket(r.id) %></span><%= r.title %></a>
       <% } %>
     </div>
-    <a class="btn btn-sm" href="/requests<%= can('editor') ? '?mine=1' : '' %>">All my requests<%- include('partials/icon', { name: 'chevron-right' }) %></a>
+    <a class="btn btn-sm" href="/requests<%= can('editor') ? '?mine=1' : '' %>"><%= t('home.all_my_requests') %><%- include('partials/icon', { name: 'chevron-right' }) %></a>
   </section>
 <% } %>
 
 <% if (!categories.length) { %>
   <div class="card empty">
     <span class="tile tile-lg"><%- include('partials/icon', { name: 'layers' }) %></span>
-    <h2>No forms yet</h2>
+    <h2><%= t('home.no_forms_yet') %></h2>
     <% if (can('editor')) { %>
-      <p>Create a category, add a form to it, and publish it. It will show up here.</p>
-      <a class="btn btn-primary" href="/editor"><%- include('partials/icon', { name: 'plus' }) %>Start building</a>
+      <p><%= t('home.no_forms_editor') %></p>
+      <a class="btn btn-primary" href="/editor"><%- include('partials/icon', { name: 'plus' }) %><%= t('home.start_building') %></a>
     <% } else { %>
-      <p>An editor has not published any request forms yet. Check back soon.</p>
+      <p><%= t('home.no_forms_member') %></p>
     <% } %>
   </div>
 <% } else { %>
@@ -50,7 +50,7 @@
             <h2><a href="/c/<%= cat.slug %>"><%= cat.name %></a></h2>
             <% if (cat.description) { %><p><%= cat.description %></p><% } %>
           </div>
-          <span class="count" title="<%= cat.forms.length %> forms"><%= cat.forms.length %></span>
+          <span class="count" title="<%= cat.forms.length === 1 ? t('home.forms_count_singular', { count: cat.forms.length }) : t('home.forms_count', { count: cat.forms.length }) %>"><%= cat.forms.length %></span>
         </div>
         <ul class="list">
           <% for (const f of cat.forms) { %>
@@ -69,8 +69,8 @@
     <% } %>
     <div class="card empty search-empty" data-filter-empty hidden>
       <span class="tile tile-lg"><%- include('partials/icon', { name: 'search' }) %></span>
-      <h2>No forms match</h2>
-      <p>Try another word, or browse the categories<% if (settings.footer_text) { %>. <%= settings.footer_text %><% } %></p>
+      <h2><%= t('home.no_matches_title') %></h2>
+      <p><%= t('home.no_matches_desc') %><% if (settings.footer_text) { %>. <%= settings.footer_text %><% } %></p>
     </div>
   </div>
 <% } %>

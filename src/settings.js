@@ -11,6 +11,7 @@ export const DEFAULTS = {
   login_text: '',
   footer_text: '',
   show_credit: '1',
+  locale: 'en', // 'en' | 'pt-BR' | 'auto'
   // Banner
   banner_color: '#2A4BC7',
   banner_image: '', // stored file name under data/uploads/branding
@@ -39,6 +40,11 @@ export const DEFAULTS = {
 };
 
 export const ROLE_CHOICES = ['member', 'editor'];
+export const LOCALE_CHOICES = {
+  en: 'English',
+  'pt-BR': 'Português (Brasil)',
+  auto: 'Automatic (browser language)',
+};
 export const COMMENT_CHOICES = {
   all: 'Everyone involved (the requester and editors)',
   staff: 'Editors only',
@@ -61,6 +67,38 @@ export const SESSION_MAX_CHOICES = {
   43200: '30 days',
   129600: '90 days',
 };
+
+export function getCommentChoices(t) {
+  if (!t) return COMMENT_CHOICES;
+  return {
+    all: t('settings_choices.comments_all'),
+    staff: t('settings_choices.comments_staff'),
+    off: t('settings_choices.comments_off'),
+  };
+}
+
+export function getSessionIdleChoices(t) {
+  if (!t) return SESSION_IDLE_CHOICES;
+  return {
+    15: t('settings_choices.session_idle_15'),
+    60: t('settings_choices.session_idle_60'),
+    240: t('settings_choices.session_idle_240'),
+    480: t('settings_choices.session_idle_480'),
+    1440: t('settings_choices.session_idle_1440'),
+    10080: t('settings_choices.session_idle_10080'),
+  };
+}
+
+export function getSessionMaxChoices(t) {
+  if (!t) return SESSION_MAX_CHOICES;
+  return {
+    480: t('settings_choices.session_max_480'),
+    1440: t('settings_choices.session_max_1440'),
+    10080: t('settings_choices.session_max_10080'),
+    43200: t('settings_choices.session_max_43200'),
+    129600: t('settings_choices.session_max_129600'),
+  };
+}
 
 // Session limits in milliseconds; the idle limit never exceeds the overall one.
 export function sessionLimits(settings) {

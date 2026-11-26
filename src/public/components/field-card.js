@@ -21,27 +21,28 @@
 //   'field-drop'    detail: { from }            another card was dropped here
 
 import { OPS, choicesOf } from '../conditions.js';
+import { t } from '../i18n.js';
 
 const TEMPLATE = document.createElement('template');
 TEMPLATE.innerHTML = `
   <div class="fcard-bar">
     <svg class="ficon fcard-icon" aria-hidden="true" focusable="false"><use data-icon/></svg>
-    <label class="fcard-type"><span class="visually-hidden">Question type</span><select data-prop="type"><button type="button"><selectedcontent></selectedcontent></button></select></label>
+    <label class="fcard-type"><span class="visually-hidden">${t('editor.question_type')}</span><select data-prop="type"><button type="button"><selectedcontent></selectedcontent></button></select></label>
     <span class="fcard-tools">
-      <button type="button" class="icon-btn" data-act="up" aria-label="Move up" title="Move up">↑</button>
-      <button type="button" class="icon-btn" data-act="down" aria-label="Move down" title="Move down">↓</button>
-      <button type="button" class="icon-btn" data-act="remove" aria-label="Remove question" title="Remove">✕</button>
+      <button type="button" class="icon-btn" data-act="up" aria-label="${t('common.move_up')}" title="${t('common.move_up')}">↑</button>
+      <button type="button" class="icon-btn" data-act="down" aria-label="${t('common.move_down')}" title="${t('common.move_down')}">↓</button>
+      <button type="button" class="icon-btn" data-act="remove" aria-label="${t('editor.remove_question')}" title="${t('common.remove')}">✕</button>
     </span>
   </div>
   <div class="fcard-body">
     <div class="fcard-edit">
-      <label class="field"><span>Question</span><input data-prop="label" maxlength="200"></label>
-      <label class="field"><span>Help text</span><input data-prop="help" maxlength="500" placeholder="Optional hint shown under the question"></label>
-      <label class="field" data-only="text textarea email number"><span>Placeholder</span><input data-prop="placeholder" maxlength="200"></label>
-      <div class="field" data-only="select radio checkbox"><span>Options</span><option-list></option-list></div>
-      <label class="choice" data-not="heading"><input type="checkbox" data-prop="required"><span>Required</span></label>
+      <label class="field"><span>${t('editor.question_label')}</span><input data-prop="label" maxlength="200"></label>
+      <label class="field"><span>${t('editor.help_text')}</span><input data-prop="help" maxlength="500" placeholder="${t('editor.help_text_placeholder')}"></label>
+      <label class="field" data-only="text textarea email number"><span>${t('editor.placeholder_label')}</span><input data-prop="placeholder" maxlength="200"></label>
+      <div class="field" data-only="select radio checkbox"><span>${t('fields.select')}</span><option-list></option-list></div>
+      <label class="choice" data-not="heading"><input type="checkbox" data-prop="required"><span>${t('editor.required')}</span></label>
       <div class="field fcard-cond">
-        <span data-cond-title>Show this question</span>
+        <span data-cond-title>${t('editor.show_question')}</span>
         <div class="cond-row">
           <label><span class="visually-hidden">Depending on</span><select data-cond="field"></select></label>
           <label data-cond-part="op"><span class="visually-hidden">Condition</span><select data-cond="op"></select></label>
@@ -51,7 +52,7 @@ TEMPLATE.innerHTML = `
       </div>
     </div>
     <div class="fcard-preview">
-      <div class="fcard-preview-label"><svg class="ficon" aria-hidden="true" focusable="false"><use data-icon/></svg>Preview</div>
+      <div class="fcard-preview-label"><svg class="ficon" aria-hidden="true" focusable="false"><use data-icon/></svg>${t('common.preview')}</div>
       <question-preview></question-preview>
     </div>
   </div>
@@ -202,18 +203,19 @@ export class FieldCard extends HTMLElement {
     const choices = choicesOf(target);
     const ops = choices.length ? Object.keys(OPS) : ['answered', 'empty'];
 
-    this.querySelector('[data-cond-title]').textContent = f.type === 'heading' ? 'Show this section' : 'Show this question';
+    this.querySelector('[data-cond-title]').textContent = f.type === 'heading' ? t('editor.show_section') : t('editor.show_question');
 
+    const untitled = t('editor.untitled_question');
     const fieldSel = this.querySelector('[data-cond="field"]');
     fieldSel.replaceChildren(
-      new Option('Always', ''),
-      ...targets.map(({ t, n }) => new Option(`when ${n}. ${t.label?.trim() || 'Untitled question'}`, t.id)),
+      new Option(t('editor.always_no_rule'), ''),
+      ...targets.map(({ t: targetItem, n }) => new Option(t('editor.when_condition', { n, label: targetItem.label?.trim() || untitled }), targetItem.id)),
     );
     fieldSel.value = target ? target.id : '';
     fieldSel.disabled = targets.length === 0;
 
     const opSel = this.querySelector('[data-cond="op"]');
-    opSel.replaceChildren(...ops.map((k) => new Option(OPS[k], k)));
+    opSel.replaceChildren(...ops.map((k) => new Option(t('conditions.' + k), k)));
     opSel.value = ops.includes(rule?.op) ? rule.op : ops[0];
     this.querySelector('[data-cond-part="op"]').hidden = !target;
 
@@ -231,9 +233,9 @@ export class FieldCard extends HTMLElement {
 
     const help = this.querySelector('[data-cond-help]');
     help.textContent = !targets.length
-      ? 'Add a question above this one to show it only for certain answers.'
+      ? t('editor.no_questions_above')
       : f.type === 'heading'
-        ? 'Hides this heading and every question under it, up to the next heading.'
+        ? (t('editor.heading_condition_help') || 'Hides this heading and every question under it, up to the next heading.')
         : '';
     help.hidden = !help.textContent;
   }

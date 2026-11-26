@@ -2,22 +2,22 @@
 <section class="auth">
   <div class="auth-brand">
     <span class="brand-mark" aria-hidden="true"></span>
-    <h1>Set up your portal</h1>
-    <p>Start with the administrator account. Everything else is done from the admin pages.</p>
+    <h1><%= t('auth.setup_title') %></h1>
+    <p><%= t('auth.setup_blurb') %></p>
   </div>
   <div class="setup-steps" aria-label="Steps">
-    <span>1. Administrator</span>
-    <span>2. Name and banner</span>
-    <span>3. Invite people</span>
+    <span><%= t('auth.setup_step_admin') %></span>
+    <span><%= t('auth.setup_step_branding') %></span>
+    <span><%= t('auth.setup_step_invite') %></span>
   </div>
   <div class="card auth-card">
     <% if (locals.error) { %><p class="field-error" role="alert" style="margin:0"><%- include('partials/icon', { name: 'alert' }) %><span><%= error %></span></p><% } %>
     <form method="post" action="/setup" class="stack">
       <input type="hidden" name="_csrf" value="<%= csrf %>">
-      <label class="field"><span>Your name</span><input name="name" value="<%= values.name || '' %>" required autocomplete="name" autofocus></label>
-      <label class="field"><span>Email</span><input type="email" name="email" value="<%= values.email || '' %>" required autocomplete="email"></label>
-      <label class="field"><span>Password</span><input type="password" name="password" required minlength="8" autocomplete="new-password"><small>At least 8 characters.</small></label>
-      <button class="btn btn-primary btn-lg" type="submit">Create administrator</button>
+      <label class="field"><span><%= t('auth.your_name') %></span><input name="name" value="<%= values.name || '' %>" required autocomplete="name" autofocus></label>
+      <label class="field"><span><%= t('auth.email') %></span><input type="email" name="email" value="<%= values.email || '' %>" required autocomplete="email"></label>
+      <label class="field"><span><%= t('auth.password') %></span><input type="password" name="password" required minlength="8" autocomplete="new-password"><small><%= t('auth.password_min_length') %></small></label>
+      <button class="btn btn-primary btn-lg" type="submit"><%= t('auth.create_admin_button') %></button>
     </form>
   </div>
 </section>

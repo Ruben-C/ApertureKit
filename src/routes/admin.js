@@ -7,8 +7,9 @@ import { one, all, run } from '../db.js';
 import { requireRole, csrf, hashPassword, ROLES } from '../auth.js';
 import {
   getSettings, setSettings, resetSettings, parseDomains,
-  DEFAULTS, ROLE_CHOICES, COMMENT_CHOICES, MAX_UPLOAD_CEILING_MB,
+  DEFAULTS, ROLE_CHOICES, LOCALE_CHOICES, COMMENT_CHOICES, MAX_UPLOAD_CEILING_MB,
   SESSION_IDLE_CHOICES, SESSION_MAX_CHOICES, sessionLimits,
+  getCommentChoices, getSessionIdleChoices, getSessionMaxChoices,
 } from '../settings.js';
 import { endUserSessions, sessionSummary } from '../sessions.js';
 import { attachmentFilesWhere, removeAttachmentFiles } from '../uploads.js';
@@ -36,20 +37,21 @@ const bannerUpload = multer({
 
 // --- Branding & settings -----------------------------------------------------
 
-const settingsLocals = () => ({
-  title: 'Settings',
+const settingsLocals = (t) => ({
+  title: t ? t('admin.settings.title') : 'Settings',
   values: getSettings(),
   defaults: DEFAULTS,
+  localeChoices: LOCALE_CHOICES,
   roleChoices: ROLE_CHOICES,
-  commentChoices: COMMENT_CHOICES,
+  commentChoices: getCommentChoices(t),
   uploadCeiling: MAX_UPLOAD_CEILING_MB,
-  sessionIdleChoices: SESSION_IDLE_CHOICES,
-  sessionMaxChoices: SESSION_MAX_CHOICES,
+  sessionIdleChoices: getSessionIdleChoices(t),
+  sessionMaxChoices: getSessionMaxChoices(t),
   webhookEvents: WEBHOOK_EVENTS,
 });
 
 router.get('/settings', (req, res) => {
-  res.render('admin/settings', settingsLocals());
+  res.render('admin/settings', settingsLocals(req.t));
 });
 
 router.post('/settings', bannerUpload.single('banner_image'), csrf, async (req, res) => {
@@ -62,6 +64,7 @@ router.post('/settings', bannerUpload.single('banner_image'), csrf, async (req, 
   }
   const b = req.body;
   const patch = {
+    locale: b.locale in LOCALE_CHOICES ? b.locale : current.locale,
     site_name: text(b.site_name, 80) || DEFAULTS.site_name,
     tagline: text(b.tagline, 200),
     welcome_text: text(b.welcome_text, 1000),

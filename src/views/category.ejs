@@ -1,5 +1,5 @@
 <%- include('partials/head') %>
-<nav class="crumbs" aria-label="Breadcrumb"><a href="/">Forms</a><%- include('partials/icon', { name: 'chevron-right' }) %><span><%= category.name %></span></nav>
+<nav class="crumbs" aria-label="Breadcrumb"><a href="/"><%= t('nav.forms') %></a><%- include('partials/icon', { name: 'chevron-right' }) %><span><%= category.name %></span></nav>
 <header class="cat-hero" style="--cat:<%= category.color %>">
   <span class="tile tile-lg" aria-hidden="true"><%= category.name.trim()[0].toUpperCase() %></span>
   <div>
@@ -10,8 +10,8 @@
 <% if (!forms.length) { %>
   <div class="card empty">
     <span class="tile tile-lg" style="--cat:<%= category.color %>"><%- include('partials/icon', { name: 'folder' }) %></span>
-    <h2>Nothing here yet</h2>
-    <p>No published forms in this category. <a href="/">See all forms</a>.</p>
+    <h2><%= t('category.nothing_here_yet') %></h2>
+    <p><%= t('category.no_forms_in_category') %> <a href="/"><%= t('category.see_all_forms') %></a>.</p>
   </div>
 <% } else { %>
   <div class="form-cards">
@@ -19,7 +19,7 @@
       <a class="card form-card" href="/f/<%= f.slug %>" style="--cat:<%= category.color %>">
         <h2><%= f.title %></h2>
         <% if (f.description) { %><p><%= f.description %></p><% } %>
-        <span class="form-card-go">Open form<%- include('partials/icon', { name: 'chevron-right', cls: 'icon-sm' }) %></span>
+        <span class="form-card-go"><%= t('category.open_form') %><%- include('partials/icon', { name: 'chevron-right', cls: 'icon-sm' }) %></span>
       </a>
     <% } %>
   </div>

@@ -78,7 +78,8 @@ export function sanitizeFields(input) {
 // `files` maps field id -> uploaded file (from multer), for file fields.
 // Fields hidden by a show-when rule are left out of `answers` altogether
 // and never raise an error, whatever was posted for them.
-export function validateSubmission(fields, body, files = {}) {
+export function validateSubmission(fields, body, files = {}, t = null) {
+  const msg = (key, fallback) => (t ? t(`fields.validation.${key}`) : fallback);
   const answers = {};
   const errors = {};
   for (const f of fields) {
@@ -89,50 +90,50 @@ export function validateSubmission(fields, body, files = {}) {
       case 'checkbox': {
         const picked = (Array.isArray(raw) ? raw : raw ? [raw] : []).filter((o) => f.options.includes(o));
         value = picked;
-        if (f.required && picked.length === 0) errors[f.id] = 'Pick at least one.';
+        if (f.required && picked.length === 0) errors[f.id] = msg('at_least_one', 'Pick at least one.');
         break;
       }
       case 'select':
       case 'radio': {
         value = typeof raw === 'string' && f.options.includes(raw) ? raw : '';
-        if (f.required && !value) errors[f.id] = 'Choose an option.';
+        if (f.required && !value) errors[f.id] = msg('choose_option', 'Choose an option.');
         break;
       }
       case 'yesno':
         value = raw === 'yes' ? 'Yes' : raw === 'no' ? 'No' : '';
-        if (f.required && !value) errors[f.id] = 'Choose yes or no.';
+        if (f.required && !value) errors[f.id] = msg('choose_yes_no', 'Choose yes or no.');
         break;
       case 'number': {
         const s = String(raw ?? '').trim().slice(0, 100);
         value = s;
-        if (s && !Number.isFinite(Number(s))) errors[f.id] = 'Enter a number.';
-        else if (f.required && !s) errors[f.id] = 'This field is required.';
+        if (s && !Number.isFinite(Number(s))) errors[f.id] = msg('enter_number', 'Enter a number.');
+        else if (f.required && !s) errors[f.id] = msg('required', 'This field is required.');
         break;
       }
       case 'email': {
         const s = String(raw ?? '').trim().slice(0, 320);
         value = s;
-        if (s && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s)) errors[f.id] = 'Enter a valid email address.';
-        else if (f.required && !s) errors[f.id] = 'This field is required.';
+        if (s && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s)) errors[f.id] = msg('enter_email', 'Enter a valid email address.');
+        else if (f.required && !s) errors[f.id] = msg('required', 'This field is required.');
         break;
       }
       case 'date': {
         const s = String(raw ?? '').trim();
         value = s;
-        if (s && !/^\d{4}-\d{2}-\d{2}$/.test(s)) errors[f.id] = 'Enter a date.';
-        else if (f.required && !s) errors[f.id] = 'This field is required.';
+        if (s && !/^\d{4}-\d{2}-\d{2}$/.test(s)) errors[f.id] = msg('enter_date', 'Enter a date.');
+        else if (f.required && !s) errors[f.id] = msg('required', 'This field is required.');
         break;
       }
       case 'file': {
         const file = files[f.id];
         value = file ? file.originalname : '';
-        if (f.required && !file) errors[f.id] = 'Attach a file.';
+        if (f.required && !file) errors[f.id] = msg('attach_file', 'Attach a file.');
         break;
       }
       default: {
         const s = String(raw ?? '').trim().slice(0, f.type === 'textarea' ? 20000 : 2000);
         value = s;
-        if (f.required && !s) errors[f.id] = 'This field is required.';
+        if (f.required && !s) errors[f.id] = msg('required', 'This field is required.');
       }
     }
     answers[f.id] = value;

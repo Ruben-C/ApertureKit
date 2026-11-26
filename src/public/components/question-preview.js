@@ -5,6 +5,8 @@
 //
 //   preview.field -> the field object; set it again to re-render
 
+import { t } from '../i18n.js';
+
 const esc = (s) => String(s ?? '')
   .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;');
 
@@ -23,9 +25,10 @@ export class QuestionPreview extends HTMLElement {
   #render() {
     const f = this.#field;
     if (!this.isConnected || !f) return;
+    const untitled = t('editor.untitled_question');
     const icon = `<svg class="ficon q-icon" aria-hidden="true" focusable="false"><use href="#ficon-${esc(f.type)}"/></svg>`;
-    const label = (f.type === 'heading' ? '' : icon) + (f.label?.trim() ? esc(f.label) : '<span class="untitled">Untitled question</span>');
-    const star = f.required && f.type !== 'heading' ? ' <abbr title="required">*</abbr>' : '';
+    const label = (f.type === 'heading' ? '' : icon) + (f.label?.trim() ? esc(f.label) : `<span class="untitled">${untitled}</span>`);
+    const star = f.required && f.type !== 'heading' ? ` <abbr title="${t('common.required')}">*</abbr>` : '';
     const help = f.help?.trim() ? `<small>${esc(f.help)}</small>` : '';
     const options = f.options?.filter((o) => o.trim()) || [];
 
@@ -33,7 +36,7 @@ export class QuestionPreview extends HTMLElement {
     if (f.type === 'heading') {
       html = `<div class="form-section"><h2>${label}</h2>${f.help?.trim() ? `<p class="muted">${esc(f.help)}</p>` : ''}</div>`;
     } else if (f.type === 'radio' || f.type === 'checkbox' || f.type === 'yesno') {
-      const choices = f.type === 'yesno' ? ['Yes', 'No'] : options.length ? options : ['Option 1'];
+      const choices = f.type === 'yesno' ? [t('common.yes'), t('common.no')] : options.length ? options : [t('editor.option_1')];
       const type = f.type === 'yesno' ? 'radio' : f.type;
       html = `<div class="field"><fieldset><legend>${label}${star}</legend>${help}${
         choices.map((o) => `<label class="choice"><input type="${type}" tabindex="-1"> ${esc(o)}</label>`).join('')
@@ -42,7 +45,7 @@ export class QuestionPreview extends HTMLElement {
       const ph = `placeholder="${esc(f.placeholder)}"`;
       let control;
       if (f.type === 'textarea') control = `<textarea rows="3" ${ph}></textarea>`;
-      else if (f.type === 'select') control = `<select><option>Choose…</option>${options.map((o) => `<option>${esc(o)}</option>`).join('')}</select>`;
+      else if (f.type === 'select') control = `<select><option>${t('common.choose')}</option>${options.map((o) => `<option>${esc(o)}</option>`).join('')}</select>`;
       else if (f.type === 'file') control = `<input type="file">`;
       else control = `<input type="${f.type === 'text' ? 'text' : esc(f.type)}" ${ph}>`;
       html = `<div class="field"><label><span>${label}${star}</span></label>${help}${control}</div>`;

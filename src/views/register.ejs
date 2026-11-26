@@ -2,21 +2,21 @@
 <section class="auth">
   <div class="auth-brand">
     <span class="brand-mark" aria-hidden="true"></span>
-    <h1>Create your account</h1>
-    <p>You need an account to send requests and follow their progress.</p>
+    <h1><%= t('auth.create_account_title') %></h1>
+    <p><%= t('auth.create_account_blurb') %></p>
   </div>
   <div class="card auth-card">
     <% if (locals.error) { %><p class="field-error" role="alert" style="margin:0"><%- include('partials/icon', { name: 'alert' }) %><span><%= error %></span></p><% } %>
     <form method="post" action="/register" class="stack">
       <input type="hidden" name="_csrf" value="<%= csrf %>">
-      <label class="field"><span>Your name</span><input name="name" value="<%= values.name || '' %>" required autocomplete="name" autofocus></label>
-      <label class="field"><span>Email</span><input type="email" name="email" value="<%= values.email || '' %>" required autocomplete="email">
-        <% if (domains.length) { %><small>Use an address ending in <%= domains.map((d) => '@' + d).join(' or ') %>.</small><% } %>
+      <label class="field"><span><%= t('auth.your_name') %></span><input name="name" value="<%= values.name || '' %>" required autocomplete="name" autofocus></label>
+      <label class="field"><span><%= t('auth.email') %></span><input type="email" name="email" value="<%= values.email || '' %>" required autocomplete="email">
+        <% if (domains.length) { %><small><%= t('auth.email_domain_hint', { domains: domains.map((d) => '@' + d).join(' or ') }) %></small><% } %>
       </label>
-      <label class="field"><span>Password</span><input type="password" name="password" required minlength="8" autocomplete="new-password"><small>At least 8 characters.</small></label>
-      <button class="btn btn-primary btn-lg" type="submit">Create account</button>
+      <label class="field"><span><%= t('auth.password') %></span><input type="password" name="password" required minlength="8" autocomplete="new-password"><small><%= t('auth.password_min_length') %></small></label>
+      <button class="btn btn-primary btn-lg" type="submit"><%= t('auth.create_account_button') %></button>
     </form>
   </div>
-  <p class="auth-foot">Already have one? <a href="/login">Sign in</a></p>
+  <p class="auth-foot"><%= t('auth.already_have_account') %> <a href="/login"><%= t('auth.sign_in') %></a></p>
 </section>
 <%- include('partials/foot') %>
