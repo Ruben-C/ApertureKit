@@ -308,6 +308,16 @@ The member's form shows and hides questions as they answer, and the server
 applies the same rules when the request is sent. A hidden question is never
 required, never stored, and never listed on the request.
 
+### Multi-language support (i18n)
+
+ApertureKit supports multiple languages with zero additional external dependencies:
+
+- **English (`en`)** and **Português do Brasil (`pt-BR`)** are built-in out of the box.
+- Administrators can set the default portal language in **Settings → Name and words** (`English`, `Português (Brasil)`, or `Automatic (browser language)`).
+- Visitors and members can switch between languages on any page using the topbar language toggle or via `?lang=pt-BR` / `?lang=en` (which is remembered in their session).
+- All form-builder tools, previews, validations, flash notices, status tags, and relative timestamps ("just now" / "agora mesmo", "5 minutes ago" / "há 5 minutos") automatically adapt to the active locale.
+- Adding additional languages (e.g., Spanish, French, German) is straightforward: simply add a locale file in `src/i18n/locales/`.
+
 ### Requests
 
 - Each submission gets a ticket number and a status: **New**,

@@ -73,7 +73,7 @@ router.post('/requests/:id/status', requireRole('editor'), (req, res) => {
   if (STATUS[status] && status !== request.status) {
     run("UPDATE requests SET status = ?, updated_at = datetime('now') WHERE id = ?", status, request.id);
     notify(req, 'request.status_changed', request.id, { previous_status: request.status, changed_by: actor(req) });
-    req.flash(`Marked as ${STATUS[status].toLowerCase()}.`, 'success');
+    req.flash(req.t('status.marked_as', { status: req.t('status.' + status).toLowerCase() }), 'success');
   }
   res.redirect(`/requests/${request.id}`);
 });

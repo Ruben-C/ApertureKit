@@ -59,7 +59,7 @@ router.post('/setup', async (req, res) => {
   });
   if (!id) return res.redirect('/');
   startSession(req, id);
-  req.flash('Your portal is ready. Change its name and banner under Settings.', 'success');
+  req.flash(req.t('auth.portal_ready'), 'success');
   res.redirect('/admin/settings');
 });
 
@@ -156,7 +156,7 @@ router.post('/register', async (req, res) => {
     ROLE_CHOICES.includes(settings.default_role) ? settings.default_role : 'member',
   );
   startSession(req, Number(result.lastInsertRowid));
-  req.flash(`Welcome, ${name.trim()}.`, 'success');
+  req.flash(req.t('auth.welcome_name', { name: name.trim() }), 'success');
   res.redirect('/');
 });
 
@@ -206,7 +206,7 @@ router.post('/f/:slug', requireLogin, attachmentUpload, csrf, (req, res) => {
 
   const files = {};
   for (const f of req.files || []) files[f.fieldname] = f;
-  const { answers, errors } = validateSubmission(form.fields, req.body, files);
+  const { answers, errors } = validateSubmission(form.fields, req.body, files, req.t);
   if (Object.keys(errors).length) {
     return res.status(400).render('form', { title: form.title, form, values: req.body, errors });
   }

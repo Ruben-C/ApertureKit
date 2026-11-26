@@ -8,6 +8,17 @@ import { getSettings, parseDomains, uploadLimitMb } from './settings.js';
 import { loadUser, flash, csrf, requireLogin } from './auth.js';
 import { FIELD_TYPES } from './fields.js';
 import { STATUS } from './status.js';
+import {
+  resolveLocale,
+  getTranslator,
+  getLocalizedStatus,
+  getLocalizedFieldTypes,
+  getClientTranslations,
+  fmtDate,
+  fmtAgo,
+  SUPPORTED_LOCALES,
+  LOCALE_LABELS,
+} from './i18n/index.js';
 import publicRoutes from './routes/public.js';
 import requestRoutes from './routes/requests.js';
 import editorRoutes from './routes/editor.js';
@@ -49,23 +60,38 @@ export function createApp() {
   app.use(flash);
   app.use(loadUser);
 
-  // Template globals.
+  // Template globals and internationalization.
   app.use((req, res, next) => {
     res.locals.settings = getSettings();
+    const locale = resolveLocale(req, res.locals.settings);
+    const t = getTranslator(locale);
+    req.locale = locale;
+    req.t = t;
+    res.locals.locale = locale;
+    res.locals.t = t;
+    res.locals.supportedLocales = SUPPORTED_LOCALES;
+    res.locals.localeLabels = LOCALE_LABELS;
     res.locals.domains = parseDomains(res.locals.settings.registration_domains);
     res.locals.uploadLimitMb = uploadLimitMb(res.locals.settings);
     res.locals.assetVersion = ASSET_VERSION;
     res.locals.path = req.path;
     res.locals.query = req.query;
-    res.locals.FIELD_TYPES = FIELD_TYPES;
-    res.locals.STATUS = STATUS;
-    res.locals.fmtDate = fmtDate;
-    res.locals.fmtAgo = fmtAgo;
+    res.locals.FIELD_TYPES = getLocalizedFieldTypes(locale);
+    res.locals.STATUS = getLocalizedStatus(locale);
+    res.locals.fmtDate = (iso) => fmtDate(iso, locale);
+    res.locals.fmtAgo = (iso) => fmtAgo(iso, locale);
     res.locals.initials = initials;
     res.locals.hue = hue;
     res.locals.ticket = (id) => res.locals.settings.ticket_prefix + String(id).padStart(4, '0');
     // The sign-in page and header need to know which methods are on.
     res.locals.signIn = signInOptions(res.locals.settings);
+    res.locals.clientI18n = getClientTranslations(locale);
+    res.locals.langUrl = (targetLang) => {
+      const q = new URLSearchParams(req.query);
+      q.set('lang', targetLang);
+      const qs = q.toString();
+      return `${req.path}${qs ? '?' + qs : ''}`;
+    };
     next();
   });
 
@@ -136,28 +162,6 @@ function signInOptions(settings) {
     buttons: providers.filter((p) => p.type !== 'ldap').map((p) => ({ id: p.id, name: p.name })),
     ldap: providers.some((p) => p.type === 'ldap'),
   };
-}
-
-function parseDate(iso) {
-  return new Date(iso.replace(' ', 'T') + 'Z');
-}
-
-function fmtDate(iso) {
-  if (!iso) return '';
-  return parseDate(iso).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
-}
-
-// "just now", "3 hours ago", "yesterday", "5 days ago"; past a month, the date.
-function fmtAgo(iso) {
-  if (!iso) return '';
-  const d = parseDate(iso);
-  const s = Math.max(0, (Date.now() - d.getTime()) / 1000);
-  if (s < 60) return 'just now';
-  const rtf = new Intl.RelativeTimeFormat(undefined, { numeric: 'auto' });
-  if (s < 3600) return rtf.format(-Math.round(s / 60), 'minute');
-  if (s < 86400) return rtf.format(-Math.round(s / 3600), 'hour');
-  if (s < 30 * 86400) return rtf.format(-Math.round(s / 86400), 'day');
-  return d.toLocaleDateString(undefined, { dateStyle: 'medium' });
 }
 
 // "Grace Hopper" -> "GH", "grace@example.com" -> "G".

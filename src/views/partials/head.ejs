@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="<%= locale %>">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -9,35 +9,36 @@
 <link rel="icon" href="/static/favicon.svg?v=<%= assetVersion %>" type="image/svg+xml">
 <link rel="stylesheet" href="/static/app.css?v=<%= assetVersion %>">
 <style>:root{--banner:<%= settings.banner_color %>;--banner-ink:<%= settings.banner_text_color %>;}</style>
-<script>document.documentElement.classList.add('js')</script>
+<script>document.documentElement.classList.add('js'); window.__I18N__ = <%- JSON.stringify(clientI18n).replaceAll('<', '\\u003c') %>;</script>
 <script type="module" src="/static/ui.js?v=<%= assetVersion %>"></script>
 </head>
 <body<%- locals.wide ? ' class="page-wide"' : '' %>>
-<a class="skip" href="#main">Skip to content</a>
+<a class="skip" href="#main"><%= t('common.skip_to_content') %></a>
 <header class="topbar">
   <div class="wrap topbar-inner">
     <a class="brand" href="/"><span class="brand-mark" aria-hidden="true"></span><span class="brand-name"><%= settings.site_name %></span></a>
     <% const setup = path.startsWith('/setup'); %>
     <% if (!setup && (user || settings.require_login !== '1')) { %>
-      <button class="icon-btn nav-toggle" type="button" data-nav-toggle aria-expanded="false" aria-controls="main-nav" aria-label="Menu"><%- include('icon', { name: 'menu' }) %></button>
-      <nav class="nav" id="main-nav" aria-label="Main">
-        <a href="/" <%- path === '/' || path.startsWith('/c/') || path.startsWith('/f/') ? 'aria-current="page"' : '' %>><%- include('icon', { name: 'home', cls: 'icon-sm' }) %>Forms</a>
+      <button class="icon-btn nav-toggle" type="button" data-nav-toggle aria-expanded="false" aria-controls="main-nav" aria-label="<%= t('common.menu') %>"><%- include('icon', { name: 'menu' }) %></button>
+      <nav class="nav" id="main-nav" aria-label="<%= t('nav.main_nav') %>">
+        <a href="/" <%- path === '/' || path.startsWith('/c/') || path.startsWith('/f/') ? 'aria-current="page"' : '' %>><%- include('icon', { name: 'home', cls: 'icon-sm' }) %><%= t('nav.forms') %></a>
         <% if (user) { %>
-          <a href="/requests<%= can('editor') ? '?mine=1' : '' %>" <%- path.startsWith('/requests') && (!can('editor') || query.mine === '1') ? 'aria-current="page"' : '' %>><%- include('icon', { name: 'file', cls: 'icon-sm' }) %>My requests</a>
+          <a href="/requests<%= can('editor') ? '?mine=1' : '' %>" <%- path.startsWith('/requests') && (!can('editor') || query.mine === '1') ? 'aria-current="page"' : '' %>><%- include('icon', { name: 'file', cls: 'icon-sm' }) %><%= t('nav.my_requests') %></a>
           <% if (can('editor')) { %>
-            <a href="/requests" <%- path.startsWith('/requests') && query.mine !== '1' ? 'aria-current="page"' : '' %>><%- include('icon', { name: 'inbox', cls: 'icon-sm' }) %>Queue</a>
-            <a href="/editor" <%- path.startsWith('/editor') ? 'aria-current="page"' : '' %>><%- include('icon', { name: 'layers', cls: 'icon-sm' }) %>Build</a>
+            <a href="/requests" <%- path.startsWith('/requests') && query.mine !== '1' ? 'aria-current="page"' : '' %>><%- include('icon', { name: 'inbox', cls: 'icon-sm' }) %><%= t('nav.queue') %></a>
+            <a href="/editor" <%- path.startsWith('/editor') ? 'aria-current="page"' : '' %>><%- include('icon', { name: 'layers', cls: 'icon-sm' }) %><%= t('nav.build') %></a>
           <% } %>
           <% if (can('admin')) { %>
-            <a href="/admin/settings" <%- path.startsWith('/admin') ? 'aria-current="page"' : '' %>><%- include('icon', { name: 'sliders', cls: 'icon-sm' }) %>Admin</a>
+            <a href="/admin/settings" <%- path.startsWith('/admin') ? 'aria-current="page"' : '' %>><%- include('icon', { name: 'sliders', cls: 'icon-sm' }) %><%= t('nav.admin') %></a>
           <% } %>
         <% } %>
       </nav>
     <% } %>
     <div class="topbar-right">
+      <a href="<%= langUrl(locale === 'pt-BR' ? 'en' : 'pt-BR') %>" class="btn btn-sm btn-ghost lang-toggle" style="padding:0.2rem 0.5rem;font-size:0.75rem;font-weight:600" title="<%= locale === 'pt-BR' ? 'Switch to English' : 'Mudar para Português' %>"><%= locale === 'pt-BR' ? 'EN' : 'PT' %></a>
       <% if (user) { %>
         <details class="menu" data-menu>
-          <summary aria-label="Account menu for <%= user.name %>">
+          <summary aria-label="<%= t('nav.account_menu_for', { name: user.name }) %>">
             <span class="avatar" style="--hue:<%= hue(user.name) %>" aria-hidden="true"><%= initials(user.name) %></span>
             <span class="who"><%= user.name %></span>
             <%- include('icon', { name: 'chevron-down' }) %>
@@ -47,22 +48,22 @@
               <span class="avatar" style="--hue:<%= hue(user.name) %>" aria-hidden="true"><%= initials(user.name) %></span>
               <div><strong><%= user.name %></strong><small><%= user.email %></small></div>
             </div>
-            <a class="menu-item" href="/requests<%= can('editor') ? '?mine=1' : '' %>"><%- include('icon', { name: 'file' }) %>My requests</a>
-            <% if (can('admin')) { %><a class="menu-item" href="/admin/users"><%- include('icon', { name: 'users' }) %>People</a><% } %>
+            <a class="menu-item" href="/requests<%= can('editor') ? '?mine=1' : '' %>"><%- include('icon', { name: 'file' }) %><%= t('nav.my_requests') %></a>
+            <% if (can('admin')) { %><a class="menu-item" href="/admin/users"><%- include('icon', { name: 'users' }) %><%= t('admin.nav.people') %></a><% } %>
             <div class="menu-sep"></div>
             <div class="menu-item" style="cursor:default"><span class="tag tag-role tag-role-<%= user.role %>"><%= user.role %></span></div>
             <div class="menu-sep"></div>
             <form method="post" action="/logout">
               <input type="hidden" name="_csrf" value="<%= csrf %>">
-              <button class="menu-item" type="submit"><%- include('icon', { name: 'logout' }) %>Sign out</button>
-              <button class="menu-item menu-item-quiet" type="submit" name="everywhere" value="1">Sign out on all devices</button>
+              <button class="menu-item" type="submit"><%- include('icon', { name: 'logout' }) %><%= t('nav.sign_out') %></button>
+              <button class="menu-item menu-item-quiet" type="submit" name="everywhere" value="1"><%= t('admin.users.sign_out_everywhere') %></button>
             </form>
           </div>
         </details>
       <% } else if (!setup) { %>
         <div class="topbar-links">
-          <% if (settings.allow_registration === '1' && signIn.password && path !== '/register') { %><a class="topbar-link" href="/register">Create account</a><% } %>
-          <% if (path !== '/login') { %><a class="btn btn-sm btn-primary" href="/login">Sign in</a><% } %>
+          <% if (settings.allow_registration === '1' && signIn.password && path !== '/register') { %><a class="topbar-link" href="/register"><%= t('auth.create_account') %></a><% } %>
+          <% if (path !== '/login') { %><a class="btn btn-sm btn-primary" href="/login"><%= t('auth.sign_in') %></a><% } %>
         </div>
       <% } %>
     </div>

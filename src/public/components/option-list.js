@@ -7,6 +7,8 @@
 //
 //   'options-change'  detail: { options }   bubbles
 
+import { t } from '../i18n.js';
+
 const MARK = { radio: '○', checkbox: '☐' };
 
 export class OptionList extends HTMLElement {
@@ -60,10 +62,12 @@ export class OptionList extends HTMLElement {
     const rows = this.#options.map((o, i) => {
       const row = document.createElement('div');
       row.className = 'opt-row';
+      const placeholder = t('editor.option_n', { n: i + 1 });
+      const removeLabel = t('editor.remove_option');
       row.innerHTML = `
         <span class="opt-mark" aria-hidden="true"></span>
-        <input maxlength="200" placeholder="Option ${i + 1}" aria-label="Option ${i + 1}">
-        <button type="button" class="icon-btn" data-act="remove" aria-label="Remove option" title="Remove option">✕</button>`;
+        <input maxlength="200" placeholder="${placeholder}" aria-label="${placeholder}">
+        <button type="button" class="icon-btn" data-act="remove" aria-label="${removeLabel}" title="${removeLabel}">✕</button>`;
       row.querySelector('.opt-mark').textContent = MARK[this.#kind] || String(i + 1);
       row.querySelector('input').value = o;
       row.querySelector('button').disabled = this.#options.length <= 1;
@@ -73,7 +77,7 @@ export class OptionList extends HTMLElement {
     add.type = 'button';
     add.className = 'linklike opt-add';
     add.dataset.act = 'add';
-    add.textContent = 'Add option';
+    add.textContent = t('editor.add_option');
     this.replaceChildren(...rows, add);
   }
 

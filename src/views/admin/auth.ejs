@@ -5,53 +5,53 @@
 <div>
 <div class="page-head">
   <div>
-    <h1>Sign-in methods</h1>
-    <p class="lede">Portal passwords work out of the box. Add single sign-on or a directory so people use the account they already have.</p>
+    <h1><%= t('admin.auth.title') %></h1>
+    <p class="lede"><%= t('admin.auth.lede') %></p>
   </div>
 </div>
 
 <div class="settings">
   <section class="settings-group card">
     <header class="card-head">
-      <h2><%- include('../partials/icon', { name: 'key' }) %>Connected methods</h2>
-      <p><% if (!providers.length) { %>Only portal passwords so far.<% } else { %><%= providers.length %> configured. Switched-off methods keep their settings but are not offered on the sign-in page.<% } %></p>
+      <h2><%- include('../partials/icon', { name: 'key' }) %><%= t('admin.auth.connected_title') %></h2>
+      <p><% if (!providers.length) { %><%= t('admin.auth.only_passwords') %><% } else { %><%- t('admin.auth.configured_count', { count: providers.length }) %><% } %></p>
     </header>
     <% if (providers.length) { %>
       <div class="table-wrap">
         <table class="table">
-          <thead><tr><th>Name</th><th>Type</th><th>Status</th><th><span class="visually-hidden">Actions</span></th></tr></thead>
+          <thead><tr><th><%= t('admin.auth.table_name') %></th><th><%= t('admin.auth.table_type') %></th><th><%= t('admin.auth.table_status') %></th><th><span class="visually-hidden"><%= t('common.actions') %></span></th></tr></thead>
           <tbody>
             <% for (const p of providers) { %>
               <tr>
                 <td><span class="person"><span class="tile tile-sm"><%- include('../partials/icon', { name: typeIcon[p.type] || 'key' }) %></span><a href="/admin/auth/<%= p.id %>" style="font-weight:600;color:inherit;text-decoration:none"><%= p.name %></a></span></td>
                 <td><%= types[p.type].label %></td>
-                <td><% if (p.enabled) { %><span class="tag tag-live"><span class="dot"></span>On</span><% } else { %><span class="tag"><span class="dot"></span>Off</span><% } %></td>
-                <td class="end"><a class="btn btn-sm btn-ghost" href="/admin/auth/<%= p.id %>"><%- include('../partials/icon', { name: 'edit' }) %>Edit</a></td>
+                <td><% if (p.enabled) { %><span class="tag tag-live"><span class="dot"></span><%= t('common.on') %></span><% } else { %><span class="tag"><span class="dot"></span><%= t('common.off') %></span><% } %></td>
+                <td class="end"><a class="btn btn-sm btn-ghost" href="/admin/auth/<%= p.id %>"><%- include('../partials/icon', { name: 'edit' }) %><%= t('common.edit') %></a></td>
               </tr>
             <% } %>
           </tbody>
         </table>
       </div>
     <% } else { %>
-      <div class="card-body"><p class="muted" style="margin:0">Passwords are on<% if (values.password_login !== '1') { %> only for administrators<% } %>. Add a method below to let people sign in with their work account.</p></div>
+      <div class="card-body"><p class="muted" style="margin:0"><%= values.password_login !== '1' ? t('admin.auth.passwords_on_admins') : t('admin.auth.passwords_on_all') %></p></div>
     <% } %>
   </section>
 
   <section class="settings-group card">
     <header class="card-head">
-      <h2><%- include('../partials/icon', { name: 'plus' }) %>Add a sign-in method</h2>
-      <p>Pick a preset to pre-fill the usual claim and attribute names; you can change everything afterwards.</p>
+      <h2><%- include('../partials/icon', { name: 'plus' }) %><%= t('admin.auth.add_method_title') %></h2>
+      <p><%= t('admin.auth.add_method_blurb') %></p>
     </header>
     <div class="card-body">
       <div class="method-cards">
-        <% for (const [key, t] of Object.entries(types)) { %>
+        <% for (const [key, tInfo] of Object.entries(types)) { %>
           <div class="method-card">
             <span class="tile"><%- include('../partials/icon', { name: typeIcon[key] || 'key' }) %></span>
-            <h3><%= t.label %></h3>
-            <p class="muted"><%= t.blurb %></p>
+            <h3><%= tInfo.label %></h3>
+            <p class="muted"><%= tInfo.blurb %></p>
             <form method="get" action="/admin/auth/new/<%= key %>" data-no-busy>
-              <select name="preset" aria-label="<%= t.label %> preset"><% for (const pr of t.presets) { %><option value="<%= pr.key %>"><%= pr.label %></option><% } %></select>
-              <button class="btn btn-sm" type="submit">Set up</button>
+              <select name="preset" aria-label="<%= tInfo.label %> preset"><% for (const pr of tInfo.presets) { %><option value="<%= pr.key %>"><%= pr.label %></option><% } %></select>
+              <button class="btn btn-sm" type="submit"><%= t('admin.auth.setup_button') %></button>
             </form>
           </div>
         <% } %>
@@ -62,17 +62,17 @@
   <form method="post" action="/admin/auth" class="settings-group card">
     <input type="hidden" name="_csrf" value="<%= csrf %>">
     <header class="card-head">
-      <h2><%- include('../partials/icon', { name: 'sliders' }) %>Options</h2>
-      <p>Apply to every method.</p>
+      <h2><%- include('../partials/icon', { name: 'sliders' }) %><%= t('admin.auth.options_title') %></h2>
+      <p><%= t('admin.auth.options_blurb') %></p>
     </header>
     <div class="card-body">
-      <label class="choice-field"><input type="checkbox" name="password_login" value="1" <%= values.password_login === '1' ? 'checked' : '' %>><span>Allow signing in with a portal password</span><small>Turn this off once single sign-on works so everyone goes through it. Administrators can always use their portal password at <code>/login?password=1</code>, so a broken identity provider never locks you out. Self-registration also needs this on.</small></label>
-      <label class="field"><span>Portal address</span>
+      <label class="choice-field"><input type="checkbox" name="password_login" value="1" <%= values.password_login === '1' ? 'checked' : '' %>><span><%= t('admin.auth.allow_password') %></span><small><%- t('admin.auth.allow_password_help', { loginUrl: '<code>/login?password=1</code>' }) %></small></label>
+      <label class="field"><span><%= t('admin.auth.portal_address') %></span>
         <input type="url" name="public_url" value="<%= values.public_url %>" placeholder="<%= detectedUrl %>" class="mono" style="max-width:30rem">
-        <small>The address people use to reach the portal, without a path. It goes into the callback URLs identity providers redirect to. Blank means use what the request says (<%= detectedUrl %> right now); set it explicitly if that looks wrong behind your proxy.</small>
+        <small><%= t('admin.auth.portal_address_help', { detected: detectedUrl }) %></small>
       </label>
     </div>
-    <div class="card-foot"><button class="btn btn-primary" type="submit">Save options</button></div>
+    <div class="card-foot"><button class="btn btn-primary" type="submit"><%= t('admin.auth.save_options') %></button></div>
   </form>
 </div>
 </div>

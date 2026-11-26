@@ -6,6 +6,17 @@ Notable changes to ApertureKit. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- **Internationalization (i18n) and Portuguese (pt-BR) translation.**
+  ApertureKit now features built-in multi-language support without additional
+  external dependencies. Português do Brasil (`pt-BR`) is fully supported
+  across all portal views, form builder, request tracking, administration
+  settings, client components, and validation messages, along with locale-aware
+  relative and absolute date formatting. Administrators can choose the portal's
+  default language under Settings or allow automatic browser detection, and
+  users can switch languages anytime with the topbar toggle.
+
 ## [0.6.0] - 2026-10-29
 
 ### Security

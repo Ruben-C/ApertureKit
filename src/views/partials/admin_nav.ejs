@@ -1,19 +1,19 @@
 <%# Left-hand navigation for the admin area. On the Settings page the
     sub-links switch sections in place (see ui.js); elsewhere they link there. %>
-<nav class="subnav" aria-label="Administration">
-  <a href="/admin/settings" <%- path === '/admin/settings' ? 'aria-current="page"' : '' %>><%- include('icon', { name: 'sliders' }) %>Settings</a>
+<nav class="subnav" aria-label="<%= t('admin.nav.settings') %>">
+  <a href="/admin/settings" <%- path === '/admin/settings' ? 'aria-current="page"' : '' %>><%- include('icon', { name: 'sliders' }) %><%= t('admin.nav.settings') %></a>
   <% if (path === '/admin/settings') { %>
     <div class="subnav-sub">
-      <a href="/admin/settings#general" data-section-link>Name and words</a>
-      <a href="/admin/settings#appearance" data-section-link>Banner</a>
-      <a href="/admin/settings#accounts" data-section-link>Accounts</a>
-      <a href="/admin/settings#requests" data-section-link>Requests</a>
-      <a href="/admin/settings#webhook" data-section-link>Webhook</a>
+      <a href="/admin/settings#general" data-section-link><%= t('admin.nav.name_and_words') %></a>
+      <a href="/admin/settings#appearance" data-section-link><%= t('admin.nav.banner') %></a>
+      <a href="/admin/settings#accounts" data-section-link><%= t('admin.nav.accounts') %></a>
+      <a href="/admin/settings#requests" data-section-link><%= t('admin.nav.requests') %></a>
+      <a href="/admin/settings#webhook" data-section-link><%= t('admin.nav.webhook') %></a>
     </div>
   <% } %>
-  <a href="/admin/users" <%- path.startsWith('/admin/users') ? 'aria-current="page"' : '' %>><%- include('icon', { name: 'users' }) %>People</a>
-  <a href="/admin/auth" <%- path.startsWith('/admin/auth') ? 'aria-current="page"' : '' %>><%- include('icon', { name: 'key' }) %>Sign-in methods</a>
-  <div class="subnav-title">Editing</div>
-  <a href="/editor"><%- include('icon', { name: 'layers' }) %>Categories and forms</a>
-  <a href="/requests"><%- include('icon', { name: 'inbox' }) %>Queue</a>
+  <a href="/admin/users" <%- path.startsWith('/admin/users') ? 'aria-current="page"' : '' %>><%- include('icon', { name: 'users' }) %><%= t('admin.nav.people') %></a>
+  <a href="/admin/auth" <%- path.startsWith('/admin/auth') ? 'aria-current="page"' : '' %>><%- include('icon', { name: 'key' }) %><%= t('admin.nav.sign_in_methods') %></a>
+  <div class="subnav-title"><%= t('admin.nav.editing') %></div>
+  <a href="/editor"><%- include('icon', { name: 'layers' }) %><%= t('admin.nav.categories_and_forms') %></a>
+  <a href="/requests"><%- include('icon', { name: 'inbox' }) %><%= t('admin.nav.queue') %></a>
 </nav>

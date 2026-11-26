@@ -72,7 +72,10 @@ export function loadUser(req, res, next) {
 export function requireLogin(req, res, next) {
   if (req.user) return next();
   req.session.returnTo = safePath(req.originalUrl);
-  req.flash(req.sessionExpired ? 'Your session timed out. Sign in again to continue.' : 'Sign in to continue.');
+  const msg = req.sessionExpired
+    ? (req.t ? req.t('auth.session_timed_out') : 'Your session timed out. Sign in again to continue.')
+    : (req.t ? req.t('auth.sign_in_to_continue') : 'Sign in to continue.');
+  req.flash(msg);
   res.redirect('/login');
 }
 

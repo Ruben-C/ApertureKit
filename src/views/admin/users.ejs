@@ -5,11 +5,11 @@
 <div>
 <div class="page-head">
   <div>
-    <h1>People</h1>
-    <p class="lede"><%= users.length %> <%= users.length === 1 ? 'person' : 'people' %> · <%= (byRole.admin || []).length %> admin<%= (byRole.admin || []).length === 1 ? '' : 's' %>, <%= (byRole.editor || []).length %> editor<%= (byRole.editor || []).length === 1 ? '' : 's' %>, <%= (byRole.member || []).length %> member<%= (byRole.member || []).length === 1 ? '' : 's' %>. Members send requests; editors also build forms and work the queue; administrators also change settings and manage people.</p>
+    <h1><%= t('admin.users.title') %></h1>
+    <p class="lede"><%- t('admin.users.summary', { total: users.length, personLabel: users.length === 1 ? t('admin.users.person_singular') : t('admin.users.person_plural'), admins: (byRole.admin || []).length, adminPlural: (byRole.admin || []).length === 1 ? '' : 's', editors: (byRole.editor || []).length, editorPlural: (byRole.editor || []).length === 1 ? '' : 's', members: (byRole.member || []).length, memberPlural: (byRole.member || []).length === 1 ? '' : 's' }) %></p>
   </div>
   <div class="page-actions">
-    <button class="btn btn-primary" type="button" data-dialog-open="add-person"><%- include('../partials/icon', { name: 'plus' }) %>Add a person</button>
+    <button class="btn btn-primary" type="button" data-dialog-open="add-person"><%- include('../partials/icon', { name: 'plus' }) %><%= t('admin.users.add_person') %></button>
   </div>
 </div>
 
@@ -17,60 +17,60 @@
 <div class="toolbar">
   <form class="search" role="search" data-no-busy style="margin-left:0">
     <%- include('../partials/icon', { name: 'search' }) %>
-    <label class="visually-hidden" for="people-filter">Filter people</label>
-    <input id="people-filter" type="search" data-filter="people" placeholder="Filter by name or email…" autocomplete="off">
+    <label class="visually-hidden" for="people-filter"><%= t('admin.users.filter_placeholder') %></label>
+    <input id="people-filter" type="search" data-filter="people" placeholder="<%= t('admin.users.filter_placeholder') %>" autocomplete="off">
   </form>
 </div>
 <% } %>
 
 <div class="card table-wrap" id="people">
   <table class="table stacked">
-    <thead><tr><th>Person</th><th>Role</th><th>Signs in with</th><th>Last active</th><th class="num">Requests</th><th><span class="visually-hidden">Actions</span></th></tr></thead>
+    <thead><tr><th><%= t('admin.users.col_person') %></th><th><%= t('admin.users.col_role') %></th><th><%= t('admin.users.col_signs_in') %></th><th><%= t('admin.users.col_last_active') %></th><th class="num"><%= t('admin.users.col_requests') %></th><th><span class="visually-hidden"><%= t('common.actions') %></span></th></tr></thead>
     <tbody>
       <% for (const u of users) { %>
         <tr data-filter-item>
           <td>
             <span class="person">
               <span class="avatar" style="--hue:<%= hue(u.name) %>" aria-hidden="true"><%= initials(u.name) %></span>
-              <span><strong><%= u.name %><% if (u.id === user.id) { %> <span class="muted" style="font-weight:400">(you)</span><% } %></strong><small><%= u.email %></small></span>
+              <span><strong><%= u.name %><% if (u.id === user.id) { %> <span class="muted" style="font-weight:400"><%= t('common.you') %></span><% } %></strong><small><%= u.email %></small></span>
             </span>
           </td>
-          <td data-label="Role">
+          <td data-label="<%= t('admin.users.col_role') %>">
             <form method="post" action="/admin/users/<%= u.id %>" class="inline" data-no-busy>
               <input type="hidden" name="_csrf" value="<%= csrf %>">
               <input type="hidden" name="action" value="role">
               <select name="role" aria-label="Role for <%= u.name %>" onchange="this.form.requestSubmit()">
                 <% for (const r of roles) { %><option value="<%= r %>" <%= u.role === r ? 'selected' : '' %>><%= r %></option><% } %>
               </select>
-              <noscript><button class="linklike" type="submit">Set</button></noscript>
+              <noscript><button class="linklike" type="submit"><%= t('common.set') %></button></noscript>
             </form>
           </td>
-          <td data-label="Signs in with"><% const via = signsInWith.get(u.id) || []; %><%= via.length ? via.join(', ') : (u.password_hash ? 'Password' : '—') %></td>
+          <td data-label="<%= t('admin.users.col_signs_in') %>"><% const via = signsInWith.get(u.id) || []; %><%= via.length ? via.join(', ') : (u.password_hash ? (locale === 'pt-BR' ? 'Senha' : 'Password') : '—') %></td>
           <% const active = sessions.get(u.id); %>
-          <td data-label="Last active"><% if (active) { %><time datetime="<%= active.lastSeen.replace(' ', 'T') %>Z" title="<%= fmtDate(active.lastSeen) %>"><%= fmtAgo(active.lastSeen) %></time><small><%= active.count %> active session<%= active.count === 1 ? '' : 's' %></small><% } else { %><span class="muted">Signed out</span><% } %></td>
-          <td class="num" data-label="Requests"><%= u.request_count %></td>
+          <td data-label="<%= t('admin.users.col_last_active') %>"><% if (active) { %><time datetime="<%= active.lastSeen.replace(' ', 'T') %>Z" title="<%= fmtDate(active.lastSeen) %>"><%= fmtAgo(active.lastSeen) %></time><small><%- t('admin.users.active_sessions', { count: active.count, plural: active.count === 1 ? '' : 's' }) %></small><% } else { %><span class="muted"><%= t('common.signed_out') %></span><% } %></td>
+          <td class="num" data-label="<%= t('admin.users.col_requests') %>"><%= u.request_count %></td>
           <td>
             <div class="row-actions">
               <details class="inline-details">
-                <summary>Change password</summary>
+                <summary><%= t('admin.users.change_password') %></summary>
                 <form method="post" action="/admin/users/<%= u.id %>">
                   <input type="hidden" name="_csrf" value="<%= csrf %>">
                   <input type="hidden" name="action" value="password">
-                  <input type="password" name="password" minlength="8" required placeholder="New password" aria-label="New password for <%= u.name %>" autocomplete="new-password">
-                  <button class="btn btn-sm" type="submit">Set</button>
+                  <input type="password" name="password" minlength="8" required placeholder="<%= t('admin.users.new_password_placeholder') %>" aria-label="New password for <%= u.name %>" autocomplete="new-password">
+                  <button class="btn btn-sm" type="submit"><%= t('common.set') %></button>
                 </form>
               </details>
               <% if (active && (u.id !== user.id || active.count > 1)) { %>
                 <form method="post" action="/admin/users/<%= u.id %>" class="inline">
                   <input type="hidden" name="_csrf" value="<%= csrf %>">
-                  <button class="icon-btn" type="submit" name="action" value="signout" aria-label="<%= u.id === user.id ? 'Sign yourself out on other devices' : `Sign ${u.name} out everywhere` %>" title="<%= u.id === user.id ? 'Sign out other devices' : 'Sign out everywhere' %>"><%- include('../partials/icon', { name: 'logout' }) %></button>
+                  <button class="icon-btn" type="submit" name="action" value="signout" aria-label="<%= u.id === user.id ? (locale === 'pt-BR' ? 'Desconectar em outros dispositivos' : 'Sign yourself out on other devices') : (locale === 'pt-BR' ? `Desconectar ${u.name} em todos os lugares` : `Sign ${u.name} out everywhere`) %>" title="<%= u.id === user.id ? (locale === 'pt-BR' ? 'Desconectar outros dispositivos' : 'Sign out other devices') : t('admin.users.sign_out_everywhere') %>"><%- include('../partials/icon', { name: 'logout' }) %></button>
                 </form>
               <% } %>
               <% if (u.id !== user.id) { %>
                 <span class="divider"></span>
                 <form method="post" action="/admin/users/<%= u.id %>" class="inline">
                   <input type="hidden" name="_csrf" value="<%= csrf %>">
-                  <button class="icon-btn icon-btn-danger" type="submit" name="action" value="delete" aria-label="Remove <%= u.name %>" title="Remove" onclick="return confirm('Remove <%= u.name %> and all of their requests?')"><%- include('../partials/icon', { name: 'trash' }) %></button>
+                  <button class="icon-btn icon-btn-danger" type="submit" name="action" value="delete" aria-label="<%= locale === 'pt-BR' ? `Remover ${u.name}` : `Remove ${u.name}` %>" title="<%= t('common.remove') %>" onclick="return confirm('<%= locale === 'pt-BR' ? `Remover ${u.name} e todas as suas solicitações?` : `Remove ${u.name} and all of their requests?` %>')"><%- include('../partials/icon', { name: 'trash' }) %></button>
                 </form>
               <% } %>
             </div>
@@ -85,23 +85,23 @@
   <form method="post" action="/admin/users">
     <input type="hidden" name="_csrf" value="<%= csrf %>">
     <div class="dialog-head">
-      <div><h2 id="add-person-title">Add a person</h2><% if (signIn.buttons.length || signIn.ldap) { %><p>Leave the password blank if they will sign in through single sign-on or the directory.</p><% } %></div>
-      <button class="icon-btn" type="button" data-dialog-close aria-label="Close"><%- include('../partials/icon', { name: 'x' }) %></button>
+      <div><h2 id="add-person-title"><%= t('admin.users.dialog_add_title') %></h2><% if (signIn.buttons.length || signIn.ldap) { %><p><%= t('admin.users.password_optional_help') %></p><% } %></div>
+      <button class="icon-btn" type="button" data-dialog-close aria-label="<%= t('common.close') %>"><%- include('../partials/icon', { name: 'x' }) %></button>
     </div>
     <div class="dialog-body">
       <% if (locals.error) { %><p class="field-error" role="alert" style="margin:0"><%- include('../partials/icon', { name: 'alert' }) %><span><%= error %></span></p><% } %>
-      <label class="field"><span>Name</span><input name="name" value="<%= values.name || '' %>" required autocomplete="off"></label>
-      <label class="field"><span>Email</span><input type="email" name="email" value="<%= values.email || '' %>" required autocomplete="off"></label>
+      <label class="field"><span><%= t('admin.users.name_label') %></span><input name="name" value="<%= values.name || '' %>" required autocomplete="off"></label>
+      <label class="field"><span><%= t('admin.users.email_label') %></span><input type="email" name="email" value="<%= values.email || '' %>" required autocomplete="off"></label>
       <div class="form-row">
-        <label class="field"><span>Password</span><input type="password" name="password" minlength="8" <%= (signIn.buttons.length || signIn.ldap) ? '' : 'required' %> autocomplete="new-password"></label>
-        <label class="field"><span>Role</span>
+        <label class="field"><span><%= t('admin.users.password_optional') %></span><input type="password" name="password" minlength="8" <%= (signIn.buttons.length || signIn.ldap) ? '' : 'required' %> autocomplete="new-password"></label>
+        <label class="field"><span><%= t('admin.users.role_label') %></span>
           <select name="role"><% for (const r of roles) { %><option value="<%= r %>" <%= (values.role || settings.default_role) === r ? 'selected' : '' %>><%= r %></option><% } %></select>
         </label>
       </div>
     </div>
     <div class="dialog-foot">
-      <button class="btn" type="button" data-dialog-close>Cancel</button>
-      <button class="btn btn-primary" type="submit">Add person</button>
+      <button class="btn" type="button" data-dialog-close><%= t('common.cancel') %></button>
+      <button class="btn btn-primary" type="submit"><%= t('admin.users.add_person') %></button>
     </div>
   </form>
 </dialog>
